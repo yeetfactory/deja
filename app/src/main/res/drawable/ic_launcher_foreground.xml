@@ -1,0 +1,11 @@
+<!-- A signal goes out through the gap in the rings, and the outer dot is what came back. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#F6F6F3" android:strokeAlpha="0.45" android:strokeWidth="5.5"
+        android:strokeLineCap="round" android:pathData="M79.11,47.27 A26,26 0 1 1 60.73,28.89" />
+    <path android:strokeColor="#F6F6F3" android:strokeAlpha="0.45" android:strokeWidth="5.5"
+        android:strokeLineCap="round" android:pathData="M68.39,52.23 A14.5,14.5 0 1 1 55.77,39.61" />
+    <path android:fillColor="#F6F6F3" android:pathData="M48,54a6,6 0 1,0 12,0a6,6 0 1,0 -12,0z" />
+    <path android:fillColor="#F6F6F3" android:pathData="M67.18,35.62a5.2,5.2 0 1,0 10.4,0a5.2,5.2 0 1,0 -10.4,0z" />
+</vector>

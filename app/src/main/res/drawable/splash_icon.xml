@@ -1,0 +1,33 @@
+<!-- The rings draw themselves out from the centre, then the outer dot arrives. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector android:width="108dp" android:height="108dp"
+            android:viewportWidth="108" android:viewportHeight="108">
+            <path android:name="outer" android:strokeColor="@color/mark" android:strokeAlpha="0.45"
+                android:strokeWidth="5.5" android:strokeLineCap="round" android:pathData="M79.11,47.27 A26,26 0 1 1 60.73,28.89" />
+            <path android:name="inner" android:strokeColor="@color/mark" android:strokeAlpha="0.45"
+                android:strokeWidth="5.5" android:strokeLineCap="round" android:pathData="M68.39,52.23 A14.5,14.5 0 1 1 55.77,39.61" />
+            <path android:fillColor="@color/mark" android:pathData="M48,54a6,6 0 1,0 12,0a6,6 0 1,0 -12,0z" />
+            <path android:name="ping" android:fillColor="@color/mark" android:fillAlpha="0" android:pathData="M67.18,35.62a5.2,5.2 0 1,0 10.4,0a5.2,5.2 0 1,0 -10.4,0z" />
+        </vector>
+    </aapt:attr>
+    <target android:name="inner">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0" android:valueTo="1"
+                android:duration="280" android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </aapt:attr>
+    </target>
+    <target android:name="outer">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0" android:valueTo="1"
+                android:startOffset="60" android:duration="300" android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </aapt:attr>
+    </target>
+    <target android:name="ping">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="fillAlpha" android:valueFrom="0" android:valueTo="1"
+                android:startOffset="300" android:duration="140" />
+        </aapt:attr>
+    </target>
+</animated-vector>

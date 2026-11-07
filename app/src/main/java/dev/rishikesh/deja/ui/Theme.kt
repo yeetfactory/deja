@@ -1,13 +1,14 @@
 package dev.rishikesh.deja.ui
 
-import android.provider.Settings
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,14 +59,16 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -75,6 +79,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -104,6 +109,15 @@ data class Palette(
     val neutralSoft: Color,
 )
 
+private const val THEME_FADE_MS = 300
+private const val SLIDE_MS = 220
+
+/** Between a screen title and its subtitle. */
+val HeadingGap = 6.dp
+
+/** Between any label and the text that explains it. */
+val TextGap = 3.dp
+
 private val Light = Palette(
     background = Color(0xFFF6F6F3),
     surface = Color(0xFFFFFFFF),
@@ -132,7 +146,7 @@ private val Dark = Palette(
     neutralSoft = Color(0xFF232427),
 )
 
-val LocalPalette = staticCompositionLocalOf { Light }
+val LocalPalette = compositionLocalOf { Light }
 
 private fun inter(weight: Int) = Font(
     R.font.inter,
@@ -163,14 +177,35 @@ object Type {
     val number = style(22.sp, 600, (-0.4).sp, 28.sp)
 }
 
+/** Fades between themes rather than snapping. Android shortens this if animations are turned off. */
+@Composable
+private fun animatedPalette(target: Palette): Palette {
+    @Composable
+    fun fade(color: Color) = animateColorAsState(color, tween(THEME_FADE_MS), label = "theme").value
+    return Palette(
+        background = fade(target.background),
+        surface = fade(target.surface),
+        line = fade(target.line),
+        ink = fade(target.ink),
+        muted = fade(target.muted),
+        faint = fade(target.faint),
+        accent = fade(target.accent),
+        accentSoft = fade(target.accentSoft),
+        alert = fade(target.alert),
+        alertSoft = fade(target.alertSoft),
+        neutralSoft = fade(target.neutralSoft),
+    )
+}
+
 @Composable
 fun DejaTheme(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
-    val palette = if (dark) Dark else Light
+    val palette = animatedPalette(if (dark) Dark else Light)
     val scheme = if (dark) {
         darkColorScheme(
             primary = palette.accent,
             surface = palette.surface,
+            surfaceContainer = palette.surface,
             surfaceContainerHigh = palette.surface,
             onSurface = palette.ink,
             onSurfaceVariant = palette.muted,
@@ -180,6 +215,7 @@ fun DejaTheme(content: @Composable () -> Unit) {
         lightColorScheme(
             primary = palette.accent,
             surface = palette.surface,
+            surfaceContainer = palette.surface,
             surfaceContainerHigh = palette.surface,
             onSurface = palette.ink,
             onSurfaceVariant = palette.muted,
@@ -225,28 +261,6 @@ val Category.label: String
         Category.UNKNOWN -> "Bluetooth device"
     }
 
-/**
- * Seconds since first composition, for read inside draw lambdas so only drawing re-runs.
- * Stays at zero when [animate] is false, so nothing redraws for an idle or reduced-motion screen.
- */
-@Composable
-fun rememberClock(animate: Boolean): State<Float> = produceState(0f, animate) {
-    if (!animate) return@produceState
-    val start = withFrameNanos { it }
-    while (true) {
-        withFrameNanos { value = (it - start) / 1_000_000_000f }
-    }
-}
-
-/** True when the person has turned animations off in system settings. */
-@Composable
-fun rememberReducedMotion(): Boolean {
-    val context = LocalContext.current
-    return remember(context) {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    }
-}
-
 /** The wall clock, ticking slowly enough that "20 s ago" stays honest without constant recomposition. */
 @Composable
 fun rememberNow(periodMs: Long = 5_000): State<Long> = produceState(System.currentTimeMillis(), periodMs) {
@@ -277,7 +291,7 @@ fun ListRow(
     val base = Modifier.fillMaxWidth().heightIn(min = 56.dp)
     Row(
         (if (onClick != null) base.clickable(onClick = onClick) else base.semantics(mergeDescendants = true) {})
-            .padding(horizontal = 16.dp, vertical = 11.dp),
+            .padding(horizontal = 16.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconBadge(icon, tint, badge)
@@ -285,6 +299,7 @@ fun ListRow(
         Column(Modifier.weight(1f)) {
             Text(title, style = Type.body, color = LocalPalette.current.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) {
+                Spacer(Modifier.height(TextGap))
                 Text(subtitle, style = Type.small, color = LocalPalette.current.muted, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
         }
@@ -317,7 +332,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
         text,
         style = Type.label,
         color = LocalPalette.current.muted,
-        modifier = modifier.padding(start = 4.dp, bottom = 8.dp).semantics { heading() },
+        modifier = modifier.padding(start = 4.dp, bottom = 10.dp).semantics { heading() },
     )
 }
 
@@ -325,6 +340,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 fun Metric(value: String, label: String, modifier: Modifier = Modifier) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(value, style = Type.number, color = LocalPalette.current.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(TextGap))
         Text(label, style = Type.small, color = LocalPalette.current.muted, maxLines = 2)
     }
 }
@@ -418,10 +434,13 @@ fun heard(then: Long, now: Long): String {
 @Composable
 fun Header(title: String, subtitle: String?, trailing: @Composable (() -> Unit)? = null) {
     val palette = LocalPalette.current
-    Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp, bottom = 14.dp), verticalAlignment = Alignment.Top) {
+    Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 16.dp, bottom = 20.dp), verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
             Text(title, style = Type.display, color = palette.ink, modifier = Modifier.semantics { heading() })
-            if (subtitle != null) Text(subtitle, style = Type.small, color = palette.muted)
+            if (subtitle != null) {
+                Spacer(Modifier.height(HeadingGap))
+                Text(subtitle, style = Type.small, color = palette.muted)
+            }
         }
         trailing?.invoke()
     }
@@ -464,7 +483,10 @@ fun Banner(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = Type.body, color = palette.ink)
-                if (body != null) Text(body, style = Type.small, color = palette.muted)
+                if (body != null) {
+                    Spacer(Modifier.height(TextGap))
+                    Text(body, style = Type.small, color = palette.muted)
+                }
             }
         }
         if (action != null && onAction != null) {
@@ -513,30 +535,95 @@ fun SwitchRow(title: String, detail: String?, checked: Boolean, onChange: (Boole
         Modifier
             .fillMaxWidth()
             .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = Type.body, color = palette.ink)
-            if (detail != null) Text(detail, style = Type.small, color = palette.muted)
+            if (detail != null) {
+                Spacer(Modifier.height(TextGap))
+                Text(detail, style = Type.small, color = palette.muted)
+            }
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
         Switch(checked = checked, onCheckedChange = null)
     }
 }
 
-/** A setting with a few choices, shown as pills that wrap on large text. */
+/**
+ * One choice from a few, with a highlight that slides to it. The highlight is drawn behind the row
+ * rather than laid out, so the segments can grow taller with large text.
+ */
 @Composable
-fun <T> ChoiceRow(title: String, detail: String?, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+fun <T> Segmented(
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    modifier: Modifier = Modifier,
+    icon: ((T) -> ImageVector)? = null,
+    onSelect: (T) -> Unit,
+) {
     val palette = LocalPalette.current
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Text(title, style = Type.body, color = palette.ink)
-        if (detail != null) Text(detail, style = Type.small, color = palette.muted)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            options.forEach { option ->
-                Pill(label(option), active = option == selected, modifier = Modifier) { onSelect(option) }
+    val position by animateFloatAsState(options.indexOf(selected).toFloat(), tween(SLIDE_MS), label = "segment")
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(palette.neutralSoft)
+            .drawBehind {
+                val width = size.width / options.size
+                drawRoundRect(
+                    palette.ink,
+                    topLeft = Offset(position * width + 3.dp.toPx(), 3.dp.toPx()),
+                    size = Size(width - 6.dp.toPx(), size.height - 6.dp.toPx()),
+                    cornerRadius = CornerRadius(9.dp.toPx()),
+                )
+            }
+            .selectableGroup(),
+    ) {
+        options.forEach { option ->
+            val chosen = option == selected
+            val color by animateColorAsState(if (chosen) palette.background else palette.ink, tween(SLIDE_MS), label = "segmentText")
+            Row(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .selectable(selected = chosen, role = Role.RadioButton) { onSelect(option) }
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = 6.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (icon != null) {
+                    Icon(icon(option), contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(label(option), style = Type.label, color = color, textAlign = TextAlign.Center, maxLines = 2)
             }
         }
+    }
+}
+
+/** A setting with a few choices. */
+@Composable
+fun <T> ChoiceRow(
+    title: String,
+    detail: String?,
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    icon: ((T) -> ImageVector)? = null,
+    onSelect: (T) -> Unit,
+) {
+    val palette = LocalPalette.current
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
+        Text(title, style = Type.body, color = palette.ink)
+        if (detail != null) {
+            Spacer(Modifier.height(TextGap))
+            Text(detail, style = Type.small, color = palette.muted)
+        }
+        Spacer(Modifier.height(12.dp))
+        Segmented(options, selected, label, icon = icon, onSelect = onSelect)
     }
 }
 

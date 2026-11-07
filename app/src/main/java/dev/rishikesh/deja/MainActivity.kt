@@ -20,6 +20,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -71,10 +72,9 @@ import dev.rishikesh.deja.ui.LocalPalette
 import dev.rishikesh.deja.ui.NearbyScreen
 import dev.rishikesh.deja.ui.PlacesScreen
 import dev.rishikesh.deja.ui.SettingsScreen
+import dev.rishikesh.deja.ui.TextGap
 import dev.rishikesh.deja.ui.Type
-import dev.rishikesh.deja.ui.rememberClock
 import dev.rishikesh.deja.ui.rememberNow
-import dev.rishikesh.deja.ui.rememberReducedMotion
 
 private val SCAN_PERMISSIONS = arrayOf(
     Manifest.permission.BLUETOOTH_SCAN,
@@ -139,6 +139,12 @@ class MainActivity : ComponentActivity() {
         if (event != 0L) requestedRoute.value = "event:$event"
     }
 
+    /** The activity handles theme changes itself so colours can fade, so the bars must follow by hand. */
+    fun refreshBars() {
+        val bars = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+    }
+
     /** Android tells a refused permission from a permanently refused one only through this answer. */
     fun rememberDenials(store: SettingsStore) {
         for (permission in SCAN_PERMISSIONS + NOTIFICATIONS) {
@@ -171,6 +177,8 @@ private fun DejaRoot(repository: Repository, store: SettingsStore, requested: St
     val activity = context as MainActivity
     val probe = remember { Probe(context, store) }
     val settings by store.settings.collectAsStateWithLifecycle()
+    val dark = isSystemInDarkTheme()
+    LaunchedEffect(dark) { activity.refreshBars() }
 
     fun refresh() {
         activity.rememberDenials(store)
@@ -237,7 +245,6 @@ private fun Home(
     val warningSince = remember { System.currentTimeMillis() - MatchEngine.DAY }
     val warning by remember { dao.watchActiveWarning(warningSince) }.collectAsStateWithLifecycle(null)
     val now by rememberNow()
-    val clock = rememberClock(animate = live.listening && !rememberReducedMotion())
 
     var tabName by rememberSaveable { mutableStateOf(Tab.NEARBY.name) }
     val tab = Tab.valueOf(tabName)
@@ -320,13 +327,12 @@ private fun Home(
             holder.SaveableStateProvider(tab.name) {
                 when (tab) {
                     Tab.NEARBY -> NearbyScreen(
+                        repository = repository,
                         live = live,
-                        totals = totals,
                         warning = warning,
                         report = report,
                         journal = journal,
                         paused = !settings.scanningEnabled,
-                        clock = clock,
                         now = now,
                         onToggle = {
                             if (settings.scanningEnabled) ScanController.pause(context, showResume = false) else ScanController.resume(context)
@@ -426,6 +432,7 @@ private fun Reason(icon: ImageVector, title: String, body: String) {
         Spacer(Modifier.width(12.dp))
         Column {
             Text(title, style = Type.body, color = palette.ink)
+            Spacer(Modifier.height(TextGap))
             Text(body, style = Type.small, color = palette.muted)
         }
     }

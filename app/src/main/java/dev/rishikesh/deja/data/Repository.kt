@@ -5,6 +5,8 @@ import dev.rishikesh.deja.core.Csv
 import dev.rishikesh.deja.core.EvidenceCodec
 import dev.rishikesh.deja.core.FollowEngine
 import dev.rishikesh.deja.core.GeoFix
+import dev.rishikesh.deja.core.Glance
+import dev.rishikesh.deja.core.GlanceEngine
 import dev.rishikesh.deja.core.MatchEngine
 import dev.rishikesh.deja.core.Merge
 import dev.rishikesh.deja.core.PlaceClusterer
@@ -158,6 +160,20 @@ class Repository(private val db: DejaDatabase) {
             else -> ""
         }
         return Triple(verdict, summary, "")
+    }
+
+    /** The summary for the top of Nearby. */
+    suspend fun glance(inRange: List<Long>, placeId: Long?, dayStart: Long, now: Long): Glance {
+        val places = dao.places().associateBy { it.id }
+        val withYou = GlanceEngine.withYou(dao.devicePlacesSince(dayStart), places)
+        if (placeId == null) return Glance(withYou = withYou)
+        return GlanceEngine.sort(
+            withYou = withYou,
+            inRange = inRange,
+            firstHeard = dao.firstHeardAt(placeId, inRange),
+            placeFirstHeard = dao.placeFirstHeard(placeId),
+            now = now,
+        )
     }
 
     /** Saves only the user's choices, so a scan running at the same moment is not overwritten. */

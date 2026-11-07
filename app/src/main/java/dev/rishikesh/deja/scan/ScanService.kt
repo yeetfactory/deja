@@ -28,7 +28,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -98,6 +101,16 @@ class ScanService : Service() {
         scope.launch { listen(active) }
         // A changed setting should apply now, not after the current pause.
         scope.launch { app.settings.settings.drop(1).collect { ScanWake.signal() } }
+        // Android drops a foreground notification posted before it's allowed, and never shows it
+        // later. On first run that's the normal order, so post it again once it can be seen.
+        scope.launch {
+            LiveState.system
+                .map { it.notificationPermission == Permission.GRANTED && it.notificationsEnabled }
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { it }
+                .collect { notifier.updateService(notificationText.ifEmpty { LISTENING }) }
+        }
         return START_STICKY
     }
 
@@ -237,6 +250,7 @@ class ScanService : Service() {
         val returning = result.returningIds
         LiveState.publish(
             result.seen.filterNot { it.ignored }.map { device -> blip(device, rssi[device.key], device.id in returning, wallClock) },
+            place?.id,
             place?.name,
             wallClock,
         )

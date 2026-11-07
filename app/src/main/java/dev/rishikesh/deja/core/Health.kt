@@ -196,7 +196,7 @@ object Health {
                 name, Level.WARNING, "Alerts disabled", "Déjà's notifications are off in system Settings. $stillScans", Recovery.NOTIFICATION_SETTINGS,
             )
             !system.alertChannelEnabled -> Capability(
-                name, Level.WARNING, "Alerts disabled", "The Pings notification category is off. $stillScans", Recovery.ALERT_CHANNEL_SETTINGS,
+                name, Level.WARNING, "Alerts disabled", "The Alerts notification category is off. $stillScans", Recovery.ALERT_CHANNEL_SETTINGS,
             )
             !input.anyAlertEnabled -> Capability(name, Level.OFF, "All alerts off", "You turned every alert off in Déjà.", Recovery.DEJA_SETTINGS)
             else -> Capability(name, Level.OK, "On", "Alerts can reach you.")

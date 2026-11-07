@@ -1,6 +1,7 @@
 package dev.rishikesh.deja.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -10,13 +11,20 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.rishikesh.deja.core.MatchEngine
@@ -49,29 +57,38 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
     LazyColumn(Modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
         item {
             Header("Devices", filter.explanation)
-            OutlinedTextField(
+            TextField(
                 value = search,
                 onValueChange = { search = it },
                 singleLine = true,
                 textStyle = Type.text,
-                placeholder = { Text("Search names, types and addresses", style = Type.text) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                placeholder = { Text("Search devices", style = Type.text) },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                shape = RoundedCornerShape(14.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = palette.surface,
+                    unfocusedContainerColor = palette.surface,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(DeviceFilter.entries) { option -> Pill(option.label, active = option == filter) { filter = option } }
             }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(DeviceSort.entries) { option ->
-                    Pill(
-                        option.label,
-                        icon = if (option == sort) Icons.Outlined.SwapVert else null,
-                        active = option == sort,
-                    ) { sort = option }
-                }
+            Row(
+                Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "%,d %s".format(total, if (total == 1) "device" else "devices"),
+                    style = Type.small,
+                    color = palette.muted,
+                    modifier = Modifier.weight(1f),
+                )
+                SortMenu(sort) { sort = it }
             }
-            Spacer(Modifier.height(8.dp))
         }
         when (val current = state) {
             Async.Loading -> item { LoadingState() }
@@ -112,6 +129,43 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
                     LoadMore(shown.size, total) { limit += PAGE }
                     Spacer(Modifier.height(20.dp))
                 }
+            }
+        }
+    }
+}
+
+/** Sorting is used far less than filtering, so it stays out of the way until it's wanted. */
+@Composable
+private fun SortMenu(sort: DeviceSort, onSort: (DeviceSort) -> Unit) {
+    val palette = LocalPalette.current
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            Modifier
+                .minimumInteractiveComponentSize()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(role = Role.DropdownList) { open = true }
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Sort: ${sort.label}", style = Type.label, color = palette.ink)
+            Spacer(Modifier.width(2.dp))
+            Icon(Icons.Outlined.ExpandMore, contentDescription = null, tint = palette.ink, modifier = Modifier.size(18.dp))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DeviceSort.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label, style = Type.body, color = palette.ink) },
+                    trailingIcon = if (option == sort) {
+                        { Icon(Icons.Outlined.Check, contentDescription = "Selected", tint = palette.ink, modifier = Modifier.size(18.dp)) }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        open = false
+                        onSort(option)
+                    },
+                )
             }
         }
     }

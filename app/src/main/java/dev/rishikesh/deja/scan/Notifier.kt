@@ -22,7 +22,7 @@ class Notifier(private val context: Context) {
             listOf(
                 // A permanent status line is not news, and a badge would sit right on the logo.
                 NotificationChannel(CHANNEL_SERVICE, "Listening", NotificationManager.IMPORTANCE_LOW).apply { setShowBadge(false) },
-                NotificationChannel(CHANNEL_ALERTS, "Pings", NotificationManager.IMPORTANCE_HIGH),
+                NotificationChannel(CHANNEL_ALERTS, "Alerts", NotificationManager.IMPORTANCE_HIGH),
                 NotificationChannel(CHANNEL_STATUS, "Scanner status", NotificationManager.IMPORTANCE_DEFAULT),
             ),
         )

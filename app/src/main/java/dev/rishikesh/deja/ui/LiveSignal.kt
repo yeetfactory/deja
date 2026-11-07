@@ -114,7 +114,7 @@ fun LiveSignalCard(device: Device) {
     Group(Modifier.padding(bottom = 12.dp)) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
             Text("Live signal", style = Type.label, color = palette.muted)
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(HeadingGap))
             when {
                 device.radio == Radio.WIFI -> {
                     SignalNumber(device.lastRssi)
@@ -161,6 +161,7 @@ private fun Watching(state: SignalState, now: Long, temporary: Boolean) {
         rssi == null -> Text("Listening for this device…", style = Type.text, color = palette.muted)
         silentFor > SignalTracker.SILENT_AFTER_MS -> {
             Text("Not heard for ${silentFor / 1000} s", style = Type.body, color = palette.ink)
+            Spacer(Modifier.height(TextGap))
             Text(
                 if (temporary) {
                     "It may be out of range, or it may have changed its private address. If so, this record won't hear it again."

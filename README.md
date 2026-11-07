@@ -4,12 +4,13 @@ Know when something comes back.
 
 Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around you. It tells you when one turns up again, or seems to be following you from place to place.
 
-**[Download the latest APK](https://github.com/yeetfactory/deja/releases/latest/download/Deja-0.0.1.apk)** · Android 15 or newer
+**[Download the latest APK](https://github.com/yeetfactory/deja/releases/latest/download/Deja-0.0.2.apk)** · Android 15 or newer
 
 ## What it does
 
 - **Remembers devices.** Sees what's nearby, and where and when it was heard.
 - **Warns about following.** Alerts only after repeated readings at places that are clearly apart, in sequence, over at least 30 minutes. Each alert shows the evidence as a timeline.
+- **Sums up what's around you.** One line says whether anything is unusual, with counts for devices that have been with you today, are new here, or are regulars.
 - **Watches a device live.** Open a device's page to see its signal strength and whether it's getting stronger or weaker.
 - **Says what it doesn't know.** A Find My broadcast shows as `Apple Find My broadcast · Model unknown` unless the device gives away more.
 - **Respects private addresses.** Phones rotate their Bluetooth address on purpose. Each address is kept as its own short-lived encounter, and Déjà never guesses that two addresses are the same device.
@@ -36,7 +37,7 @@ Backups and device transfer are turned off for its data. You choose how long his
 ## Limits
 
 - It's a helpful signal, not a safety guarantee. If you think you're being tracked, contact local authorities or a support service.
-- Signal strength isn't distance. Walls and bodies change it as much as moving does, and the radar's positions don't show direction.
+- Signal strength isn't distance. Walls and bodies change it as much as moving does.
 - With the screen off, Android only lets it hear known brands and trackers.
 - It can miss a tracker that keeps changing its private address, and it can't identify every model.
 - Advertisements are only claims, because any transmitter can broadcast any model code.

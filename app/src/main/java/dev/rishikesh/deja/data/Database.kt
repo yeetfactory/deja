@@ -13,6 +13,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteQuery
+import dev.rishikesh.deja.core.DevicePlace
+import dev.rishikesh.deja.core.FirstHeard
 import dev.rishikesh.deja.core.HistoryPoint
 import dev.rishikesh.deja.core.TrailPoint
 import kotlinx.coroutines.flow.Flow
@@ -204,6 +206,23 @@ interface DejaDao {
 
     @Query("DELETE FROM sighting WHERE deviceId = :deviceId")
     suspend fun deleteSightings(deviceId: Long)
+
+    /** Bluetooth only: a fixed router can be heard from two nearby places without ever moving. */
+    @Query(
+        """SELECT DISTINCT s.deviceId, s.placeId FROM sighting s JOIN device d ON d.id = s.deviceId
+           WHERE s.time >= :since AND s.placeId IS NOT NULL AND d.radio = 'BLE'
+           AND d.identity != 'ADDRESS_ONLY' AND d.ignored = 0 AND d.owned = 0""",
+    )
+    suspend fun devicePlacesSince(since: Long): List<DevicePlace>
+
+    @Query("SELECT deviceId, MIN(time) AS firstHere FROM sighting WHERE placeId = :placeId AND deviceId IN (:ids) GROUP BY deviceId")
+    suspend fun firstHeardAt(placeId: Long, ids: List<Long>): List<FirstHeard>
+
+    @Query("SELECT MIN(time) FROM sighting WHERE placeId = :placeId")
+    suspend fun placeFirstHeard(placeId: Long): Long?
+
+    @Query("SELECT * FROM device WHERE id IN (:ids) ORDER BY lastSeen DESC")
+    suspend fun devicesByIds(ids: List<Long>): List<Device>
 
     @Query("SELECT * FROM place")
     suspend fun places(): List<Place>

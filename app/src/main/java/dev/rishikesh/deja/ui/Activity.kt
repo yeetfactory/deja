@@ -74,7 +74,7 @@ fun deliveryText(delivery: Delivery): String? = when (delivery) {
     Delivery.POSTED -> "Notified"
     Delivery.DISABLED_IN_SETTINGS -> "Not notified: this alert is off in Settings"
     Delivery.BLOCKED_PERMISSION -> "Not notified: notifications are off"
-    Delivery.BLOCKED_CHANNEL -> "Not notified: the Pings category is off"
+    Delivery.BLOCKED_CHANNEL -> "Not notified: the Alerts category is off"
     Delivery.UNKNOWN -> "Notification was attempted, result not recorded"
 }
 

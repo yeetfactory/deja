@@ -120,6 +120,7 @@ private fun DeviceScreen(repository: Repository, device: Device, onBack: () -> U
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text(device.title, style = Type.title, color = palette.ink, maxLines = 3)
+                    Spacer(Modifier.height(TextGap))
                     val type = if (device.title == device.descriptor) device.category.label else device.descriptor ?: device.category.label
                     Text(
                         "$type · ${if (device.radio == Radio.WIFI) "Wi-Fi" else "Bluetooth"}",
@@ -374,6 +375,7 @@ private fun Explain(title: String, body: String) {
     val palette = LocalPalette.current
     Column(Modifier.padding(horizontal = 16.dp, vertical = 11.dp)) {
         Text(title, style = Type.body, color = palette.ink)
+        Spacer(Modifier.height(TextGap))
         Text(body, style = Type.small, color = palette.muted)
     }
 }
@@ -381,8 +383,9 @@ private fun Explain(title: String, body: String) {
 @Composable
 fun DetailRow(title: String, value: String) {
     val palette = LocalPalette.current
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(title, style = Type.small, color = palette.muted)
+        Spacer(Modifier.height(TextGap))
         Text(value, style = Type.text, color = palette.ink)
     }
 }

@@ -25,6 +25,7 @@ data class Blip(
 data class Live(
     val listening: Boolean = false,
     val simulated: Boolean = false,
+    val placeId: Long? = null,
     val placeName: String? = null,
     /** Everything heard recently, stable addresses and private ones alike. */
     val blips: List<Blip> = emptyList(),
@@ -60,10 +61,10 @@ object LiveState {
     private fun ttl(plan: ScanPlan?) =
         maxOf(MIN_TTL_MS, 5 * ((plan?.pauseMs ?: 0L) + (plan?.burstMs ?: 0L)) / 2)
 
-    fun publish(blips: List<Blip>, placeName: String?, now: Long) = state.update { current ->
+    fun publish(blips: List<Blip>, placeId: Long?, placeName: String?, now: Long) = state.update { current ->
         val fresh = blips.mapTo(HashSet()) { it.deviceId }
         val kept = current.blips.filter { it.deviceId !in fresh && now - it.heardAt < ttl(current.plan) }
-        current.copy(blips = kept + blips, placeName = placeName)
+        current.copy(blips = kept + blips, placeId = placeId, placeName = placeName)
     }
 
     /** Drops what has aged out. Runs even when a scan fails, so nothing lingers as if still here. */

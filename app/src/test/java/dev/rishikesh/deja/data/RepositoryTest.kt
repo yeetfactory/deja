@@ -321,6 +321,46 @@ class RepositoryTest {
         assertEquals(1, dao.watchDeviceCount(DeviceQuery.count("keys", DeviceFilter.REMEMBERED)).first())
     }
 
+    @Test fun `the summary finds a device at two separate places today`() = runBlocking {
+        follow("ble:tag")
+        val id = dao.deviceByKey("ble:tag")!!.id
+        val gym = dao.places().first { it.name == "Gym" }
+        val glance = repository.glance(listOf(id), gym.id, start - HOUR, start + 200 * MINUTE)
+        assertEquals(setOf(id), glance.withYou)
+        assertTrue("this place is under a day old", glance.learning)
+    }
+
+    @Test fun `the summary leaves out your own gear, private addresses and Wi-Fi`() = runBlocking {
+        follow("ble:mine")
+        val mine = dao.deviceByKey("ble:mine")!!
+        repository.updateFlags(mine.copy(owned = true))
+        val home = dao.places().first { it.name == "Home" }
+        val cafe = dao.places().first { it.name == "Café" }
+        val rotating = observation("ble:4A", identity = IdentityConfidence.ADDRESS_ONLY, temporary = true)
+        val router = observation("wifi:aa", Category.NETWORK, TypeConfidence.HIGH).copy(radio = Radio.WIFI)
+        repository.ingest(listOf(rotating, router), home, 15f, start)
+        repository.ingest(listOf(rotating, router), cafe, 15f, start + HOUR)
+        assertTrue(repository.glance(emptyList(), home.id, start - HOUR, start + 2 * HOUR).withYou.isEmpty())
+    }
+
+    @Test fun `the summary splits new from regular once a place has history`() = runBlocking {
+        val home = place("Home", 52.52, 13.405)
+        repository.ingest(listOf(observation("ble:old")), home, 15f, start)
+        val later = start + 3 * DAY
+        repository.ingest(listOf(observation("ble:old"), observation("ble:new")), home, 15f, later)
+        val old = dao.deviceByKey("ble:old")!!.id
+        val fresh = dao.deviceByKey("ble:new")!!.id
+        val glance = repository.glance(listOf(old, fresh), home.id, later - HOUR, later + MINUTE)
+        assertFalse(glance.learning)
+        assertEquals(setOf(fresh), glance.newHere)
+        assertEquals(setOf(old), glance.regulars)
+    }
+
+    @Test fun `the summary works without a place`() = runBlocking {
+        val glance = repository.glance(listOf(1L), null, 0, start)
+        assertFalse(glance.placeKnown)
+    }
+
     @Test fun `every sort order is valid sql`() = runBlocking {
         repository.ingest(listOf(observation("ble:a")), null, null, start)
         DeviceSort.entries.forEach { sort ->

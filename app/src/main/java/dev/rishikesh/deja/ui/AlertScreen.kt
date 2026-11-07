@@ -79,6 +79,7 @@ private fun AlertScreen(repository: Repository, event: EventRow, onBack: () -> U
     LazyColumn(Modifier.fillMaxSize()) {
         item {
             Text(eventTitle(event), style = Type.title, color = palette.ink)
+            Spacer(Modifier.height(HeadingGap))
             Text(format.format(Date(event.time)), style = Type.small, color = palette.muted)
             Spacer(Modifier.height(12.dp))
             if (event.summary.isNotEmpty()) {
@@ -141,6 +142,7 @@ private fun Step(step: EvidenceStep, format: SimpleDateFormat) {
     val palette = LocalPalette.current
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 11.dp)) {
         Text(step.placeName, style = Type.body, color = palette.ink)
+        Spacer(Modifier.height(TextGap))
         val span = if (step.end > step.start) " for ${FollowEngine.duration(step.end - step.start)}" else ""
         Text("${format.format(Date(step.start))}$span", style = Type.small, color = palette.muted)
         Text(

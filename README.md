@@ -41,6 +41,14 @@ Backups and device transfer are turned off for its data. You choose how long his
 - It can miss a tracker that keeps changing its private address, and it can't identify every model.
 - Advertisements are only claims, because any transmitter can broadcast any model code.
 
+## Acceptable use
+
+Déjà is for noticing devices around you, including ones that may be tracking you. Don't use it to follow, monitor or locate other people. That may be illegal where you live.
+
+## Disclaimer
+
+Déjà is an experimental project, provided as is, with no warranty, and you use it at your own risk. It isn't a safety product. It can miss trackers and it can raise false alarms, so don't rely on it for your safety. The people involved in this project aren't responsible for any harm, loss or misuse. If you think you're being tracked, contact local authorities or a support service.
+
 ## Build from source
 
 You need JDK 21 and the Android SDK with API level 37.
@@ -64,3 +72,7 @@ Then run `./gradlew :app:assembleRelease`.
 ## Credits
 
 Find My status bits are read the way [AirGuard](https://github.com/seemoo-lab/AirGuard) reads them, and Apple advertisement formats come from [furiousMAC/continuity](https://github.com/furiousMAC/continuity). The [Inter](https://rsms.me/inter/) typeface is used under the SIL Open Font License, included in `third_party/`.
+
+## Licence
+
+Déjà is released under the [MIT License](LICENSE).

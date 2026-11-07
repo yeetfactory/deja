@@ -44,6 +44,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
@@ -627,7 +628,19 @@ fun SwitchRow(
             }
         }
         Spacer(Modifier.width(16.dp))
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors =
+                SwitchDefaults.colors(
+                    checkedThumbColor = palette.surface,
+                    checkedTrackColor = palette.ink,
+                    checkedBorderColor = palette.ink,
+                    uncheckedThumbColor = palette.ink,
+                    uncheckedTrackColor = palette.surface,
+                    uncheckedBorderColor = palette.ink,
+                ),
+        )
     }
 }
 

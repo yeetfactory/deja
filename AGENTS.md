@@ -14,7 +14,7 @@ Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around y
 | --- | --- |
 | `./gradlew check` | Formatting, Android Lint and every unit test. Work isn't done until this passes. |
 | `./gradlew spotlessApply` | Fixes formatting. |
-| `./gradlew :app:testDebugUnitTest --tests 'dev.rishikesh.deja.core.MatchEngineTest'` | Runs one test class. |
+| `./gradlew :app:testDebugUnitTest --tests 'top.yeetfactory.deja.core.MatchEngineTest'` | Runs one test class. |
 | `./gradlew :app:lintDebug` | Android Lint only. The report is in `app/build/reports/`. |
 | `./gradlew :app:assembleDebug` | Builds a debug APK. |
 
@@ -22,7 +22,7 @@ Tests run on the JVM, with Robolectric for Android code. They don't need a phone
 
 ## Layout
 
-The code is in `app/src/main/java/dev/rishikesh/deja/`.
+The code is in `app/src/main/java/top/yeetfactory/deja/`.
 
 - `core/` holds the rules, in plain Kotlin with no Android in them: what an advertisement is (`BleClassifier`), when a sighting becomes an event (`MatchEngine`), whether something follows you (`FollowEngine`), places (`PlaceClusterer`), scan timing (`ScanPolicy`) and scanner health (`Health`). New logic goes here, with a test.
 - `data/` holds the Room database and its queries (`Database.kt`), the entities (`Model.kt`), `Repository`, which takes in sightings and applies retention, and `SettingsStore`.

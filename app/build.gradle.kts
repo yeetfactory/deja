@@ -17,11 +17,11 @@ val keystore =
     }
 
 android {
-    namespace = "dev.rishikesh.deja"
+    namespace = "top.yeetfactory.deja"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "dev.rishikesh.deja"
+        applicationId = "top.yeetfactory.deja"
         minSdk = 35
         targetSdk = 37
         versionCode = 3

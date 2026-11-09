@@ -11,7 +11,10 @@ import kotlinx.coroutines.launch
 
 /** Handles notification buttons, the wake alarm, and the phone restarting. */
 class DejaReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         val app = context.applicationContext as DejaApp
         when (intent.action) {
             ACTION_WAKE -> {
@@ -19,8 +22,15 @@ class DejaReceiver : BroadcastReceiver() {
                 ScanWake.acquire(context, WAKE_HANDOFF_MS)
                 ScanWake.signal()
             }
-            ACTION_PAUSE -> ScanController.pause(context)
-            ACTION_MINE, ACTION_IGNORE, ACTION_DISMISS -> settle(context, app, intent)
+
+            ACTION_PAUSE -> {
+                ScanController.pause(context)
+            }
+
+            ACTION_MINE, ACTION_IGNORE, ACTION_DISMISS -> {
+                settle(context, app, intent)
+            }
+
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 // Android forbids starting location work from here, so all we can do is say so.
                 val settings = app.settings.settings.value
@@ -34,7 +44,11 @@ class DejaReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun settle(context: Context, app: DejaApp, intent: Intent) {
+    private fun settle(
+        context: Context,
+        app: DejaApp,
+        intent: Intent,
+    ) {
         val event = intent.getLongExtra(EXTRA_EVENT, 0)
         val device = intent.getLongExtra(EXTRA_DEVICE, 0)
         val notification = intent.getIntExtra(EXTRA_NOTIFICATION, 0)

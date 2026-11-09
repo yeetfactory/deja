@@ -3,10 +3,16 @@ package dev.rishikesh.deja.core
 import dev.rishikesh.deja.data.Place
 
 /** One device having been at one place, reduced to what the summary needs. */
-data class DevicePlace(val deviceId: Long, val placeId: Long)
+data class DevicePlace(
+    val deviceId: Long,
+    val placeId: Long,
+)
 
 /** When a device was first heard at the current place. */
-data class FirstHeard(val deviceId: Long, val firstHere: Long)
+data class FirstHeard(
+    val deviceId: Long,
+    val firstHere: Long,
+)
 
 /** The answer to "is anything unusual around me?", for the top of the Nearby screen. */
 data class Glance(
@@ -32,15 +38,20 @@ object GlanceEngine {
     const val NEW_MS = MatchEngine.DAY
 
     /** Devices seen at places that are really apart, so one drifting place doesn't count twice. */
-    fun withYou(rows: List<DevicePlace>, places: Map<Long, Place>): Set<Long> =
-        rows.groupBy { it.deviceId }.filterValues { visits ->
-            val seen = visits.mapNotNull { places[it.placeId] }
-            seen.indices.any { i ->
-                (i + 1 until seen.size).any { j ->
-                    PlaceClusterer.metersBetween(seen[i], seen[j]) > FollowEngine.MIN_SEPARATION_METERS
+    fun withYou(
+        rows: List<DevicePlace>,
+        places: Map<Long, Place>,
+    ): Set<Long> =
+        rows
+            .groupBy { it.deviceId }
+            .filterValues { visits ->
+                val seen = visits.mapNotNull { places[it.placeId] }
+                seen.indices.any { i ->
+                    (i + 1 until seen.size).any { j ->
+                        PlaceClusterer.metersBetween(seen[i], seen[j]) > FollowEngine.MIN_SEPARATION_METERS
+                    }
                 }
-            }
-        }.keys
+            }.keys
 
     /**
      * @param inRange the stable devices heard around now.
@@ -71,7 +82,10 @@ object GlanceEngine {
         }
     }
 
-    fun detail(glance: Glance, nearby: Int): String {
+    fun detail(
+        glance: Glance,
+        nearby: Int,
+    ): String {
         val heard = "$nearby nearby"
         return when {
             !glance.placeKnown -> "$heard · place not known yet"

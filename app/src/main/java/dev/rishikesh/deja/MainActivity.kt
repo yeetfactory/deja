@@ -21,18 +21,42 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Bluetooth
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Radar
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,9 +75,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.rishikesh.deja.core.Health
 import dev.rishikesh.deja.core.HealthInputs
+import dev.rishikesh.deja.core.MatchEngine
 import dev.rishikesh.deja.core.Recovery
 import dev.rishikesh.deja.core.ScanPolicy
-import dev.rishikesh.deja.core.MatchEngine
 import dev.rishikesh.deja.data.Repository
 import dev.rishikesh.deja.data.SettingsStore
 import dev.rishikesh.deja.data.Totals
@@ -76,11 +100,12 @@ import dev.rishikesh.deja.ui.TextGap
 import dev.rishikesh.deja.ui.Type
 import dev.rishikesh.deja.ui.rememberNow
 
-private val SCAN_PERMISSIONS = arrayOf(
-    Manifest.permission.BLUETOOTH_SCAN,
-    Manifest.permission.ACCESS_FINE_LOCATION,
-    Manifest.permission.ACCESS_COARSE_LOCATION,
-)
+private val SCAN_PERMISSIONS =
+    arrayOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+    )
 
 private const val NOTIFICATIONS = Manifest.permission.POST_NOTIFICATIONS
 private const val MAX_TAB_SCALE = 1.3f
@@ -92,7 +117,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Android remembers this itself. Setting it again keeps it true after a data restore.
         getSystemService(UiModeManager::class.java)
-            .setApplicationNightMode((application as DejaApp).settings.settings.value.theme.nightMode)
+            .setApplicationNightMode(
+                (application as DejaApp)
+                    .settings.settings.value.theme.nightMode,
+            )
         val bars = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
         super.onCreate(savedInstanceState)
@@ -104,7 +132,8 @@ class MainActivity : ComponentActivity() {
         val app = application as DejaApp
         Notifier(this).createChannels()
         // Someone upgrading has already been through this, so the welcome would only get in the way.
-        val alreadySetUp = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val alreadySetUp =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (alreadySetUp && !app.settings.settings.value.onboarded) app.settings.update { it.copy(onboarded = true) }
         setContent {
             DejaTheme {
@@ -163,7 +192,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val label: String, val icon: ImageVector) {
+private enum class Tab(
+    val label: String,
+    val icon: ImageVector,
+) {
     NEARBY("Nearby", Icons.Outlined.Radar),
     ACTIVITY("Activity", Icons.Outlined.History),
     DEVICES("Devices", Icons.Outlined.Devices),
@@ -172,7 +204,12 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 }
 
 @Composable
-private fun DejaRoot(repository: Repository, store: SettingsStore, requested: String?, onRequestHandled: () -> Unit) {
+private fun DejaRoot(
+    repository: Repository,
+    store: SettingsStore,
+    requested: String?,
+    onClearRequest: () -> Unit,
+) {
     val context = LocalContext.current
     val activity = context as MainActivity
     val probe = remember { Probe(context, store) }
@@ -185,17 +222,19 @@ private fun DejaRoot(repository: Repository, store: SettingsStore, requested: St
         LiveState.setSystem(probe.read())
     }
 
-    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        store.markAsked(NOTIFICATIONS)
-        refresh()
-    }
-    val askScanning = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        SCAN_PERMISSIONS.forEach(store::markAsked)
-        refresh()
-        ScanController.ensureRunning(context)
-        // Asked once, straight after, or a following alert could never reach someone who didn't look.
-        if (!store.wasAsked(NOTIFICATIONS)) askNotifications.launch(NOTIFICATIONS)
-    }
+    val askNotifications =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            store.markAsked(NOTIFICATIONS)
+            refresh()
+        }
+    val askScanning =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            SCAN_PERMISSIONS.forEach(store::markAsked)
+            refresh()
+            ScanController.ensureRunning(context)
+            // Asked once, straight after, or a following alert could never reach someone who didn't look.
+            if (!store.wasAsked(NOTIFICATIONS)) askNotifications.launch(NOTIFICATIONS)
+        }
 
     // Permissions and radios can change in system Settings while the app is away.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -209,7 +248,7 @@ private fun DejaRoot(repository: Repository, store: SettingsStore, requested: St
                 repository = repository,
                 store = store,
                 requested = requested,
-                onRequestHandled = onRequestHandled,
+                onClearRequest = onClearRequest,
                 onAskScanning = { askScanning.launch(SCAN_PERMISSIONS) },
                 onAskNotifications = { askNotifications.launch(NOTIFICATIONS) },
             )
@@ -230,7 +269,7 @@ private fun Home(
     repository: Repository,
     store: SettingsStore,
     requested: String?,
-    onRequestHandled: () -> Unit,
+    onClearRequest: () -> Unit,
     onAskScanning: () -> Unit,
     onAskNotifications: () -> Unit,
 ) {
@@ -254,57 +293,89 @@ private fun Home(
     fun push(route: String) {
         stack = stack + route
     }
+
     fun pop() {
         stack = stack.dropLast(1)
     }
+
     fun open(deviceId: Long) = push("device:$deviceId")
+
     fun openEvent(eventId: Long) = push("event:$eventId")
 
+    val clearRequest by rememberUpdatedState(onClearRequest)
     LaunchedEffect(requested) {
         if (requested != null) {
             push(requested)
-            onRequestHandled()
+            clearRequest()
         }
     }
 
-    val report = Health.report(
-        HealthInputs(
-            system = system,
-            bluetoothEnabled = settings.bluetoothEnabled,
-            wifiEnabled = settings.wifiEnabled,
-            anyAlertEnabled = settings.alerts.let { it.following || it.watched || it.newTracker },
-            listening = live.listening,
-            paused = !settings.scanningEnabled,
-            journal = journal,
-            staleAfterMs = ScanPolicy.staleAfter(live.plan),
-            now = now,
-        ),
-    )
+    val report =
+        Health.report(
+            HealthInputs(
+                system = system,
+                bluetoothEnabled = settings.bluetoothEnabled,
+                wifiEnabled = settings.wifiEnabled,
+                anyAlertEnabled = settings.alerts.let { it.following || it.watched || it.newTracker },
+                listening = live.listening,
+                paused = !settings.scanningEnabled,
+                journal = journal,
+                staleAfterMs = ScanPolicy.staleAfter(live.plan),
+                now = now,
+            ),
+        )
 
     fun recover(recovery: Recovery) {
         fun settingsIntent(action: String) = Intent(action)
         when (recovery) {
-            Recovery.GRANT_SCANNING -> onAskScanning()
-            Recovery.GRANT_NOTIFICATIONS -> onAskNotifications()
-            Recovery.APP_SETTINGS -> context.startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
-            )
-            Recovery.ENABLE_BLUETOOTH -> context.startActivity(settingsIntent(Settings.ACTION_BLUETOOTH_SETTINGS))
-            Recovery.WIFI_SETTINGS -> context.startActivity(settingsIntent(Settings.ACTION_WIFI_SETTINGS))
-            Recovery.LOCATION_SETTINGS -> context.startActivity(settingsIntent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            Recovery.NOTIFICATION_SETTINGS -> context.startActivity(
-                settingsIntent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
-            )
-            Recovery.ALERT_CHANNEL_SETTINGS -> context.startActivity(
-                settingsIntent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    .putExtra(Settings.EXTRA_CHANNEL_ID, Notifier.CHANNEL_ALERTS),
-            )
+            Recovery.GRANT_SCANNING -> {
+                onAskScanning()
+            }
+
+            Recovery.GRANT_NOTIFICATIONS -> {
+                onAskNotifications()
+            }
+
+            Recovery.APP_SETTINGS -> {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                )
+            }
+
+            Recovery.ENABLE_BLUETOOTH -> {
+                context.startActivity(settingsIntent(Settings.ACTION_BLUETOOTH_SETTINGS))
+            }
+
+            Recovery.WIFI_SETTINGS -> {
+                context.startActivity(settingsIntent(Settings.ACTION_WIFI_SETTINGS))
+            }
+
+            Recovery.LOCATION_SETTINGS -> {
+                context.startActivity(settingsIntent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }
+
+            Recovery.NOTIFICATION_SETTINGS -> {
+                context.startActivity(
+                    settingsIntent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
+                )
+            }
+
+            Recovery.ALERT_CHANNEL_SETTINGS -> {
+                context.startActivity(
+                    settingsIntent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        .putExtra(Settings.EXTRA_CHANNEL_ID, Notifier.CHANNEL_ALERTS),
+                )
+            }
+
             Recovery.DEJA_SETTINGS -> {
                 stack = emptyList()
                 tabName = Tab.SETTINGS.name
             }
-            Recovery.RESUME -> ScanController.resume(context)
+
+            Recovery.RESUME -> {
+                ScanController.resume(context)
+            }
         }
     }
 
@@ -314,7 +385,7 @@ private fun Home(
         holder.SaveableStateProvider(top) {
             val (kind, id) = top.split(":").let { it[0] to it.getOrNull(1)?.toLongOrNull() }
             when (kind) {
-                "device" -> DeviceRoute(repository, id ?: 0L, ::pop, ::openEvent)
+                "device" -> DeviceRoute(repository, id ?: 0L, ::pop)
                 "event" -> AlertRoute(repository, id ?: 0L, ::pop, ::open)
                 else -> HealthScreen(report, journal, system, live.plan, now, ::pop, ::recover)
             }
@@ -326,26 +397,47 @@ private fun Home(
         Box(Modifier.weight(1f)) {
             holder.SaveableStateProvider(tab.name) {
                 when (tab) {
-                    Tab.NEARBY -> NearbyScreen(
-                        repository = repository,
-                        live = live,
-                        warning = warning,
-                        report = report,
-                        journal = journal,
-                        paused = !settings.scanningEnabled,
-                        now = now,
-                        onToggle = {
-                            if (settings.scanningEnabled) ScanController.pause(context, showResume = false) else ScanController.resume(context)
-                        },
-                        onRecover = ::recover,
-                        onHealth = { push("health") },
-                        onOpen = ::open,
-                        onOpenEvent = ::openEvent,
-                    )
-                    Tab.ACTIVITY -> ActivityScreen(repository, ::openEvent)
-                    Tab.DEVICES -> DevicesScreen(repository, settings, ::open)
-                    Tab.PLACES -> PlacesScreen(repository)
-                    Tab.SETTINGS -> SettingsScreen(repository, store, settings, totals) { push("health") }
+                    Tab.NEARBY -> {
+                        NearbyScreen(
+                            repository = repository,
+                            live = live,
+                            warning = warning,
+                            report = report,
+                            journal = journal,
+                            paused = !settings.scanningEnabled,
+                            now = now,
+                            onToggle = {
+                                if (settings.scanningEnabled) {
+                                    ScanController.pause(
+                                        context,
+                                        showResume = false,
+                                    )
+                                } else {
+                                    ScanController.resume(context)
+                                }
+                            },
+                            onRecover = ::recover,
+                            onHealth = { push("health") },
+                            onOpen = ::open,
+                            onOpenEvent = ::openEvent,
+                        )
+                    }
+
+                    Tab.ACTIVITY -> {
+                        ActivityScreen(repository, ::openEvent)
+                    }
+
+                    Tab.DEVICES -> {
+                        DevicesScreen(repository, settings, ::open)
+                    }
+
+                    Tab.PLACES -> {
+                        PlacesScreen(repository)
+                    }
+
+                    Tab.SETTINGS -> {
+                        SettingsScreen(repository, store, settings, totals, onHealth = { push("health") })
+                    }
                 }
             }
         }
@@ -378,7 +470,10 @@ private fun tabLabel(): TextStyle {
 }
 
 @Composable
-private fun Welcome(onContinue: () -> Unit, onSkip: () -> Unit) {
+private fun Welcome(
+    onContinue: () -> Unit,
+    onSkip: () -> Unit,
+) {
     val palette = LocalPalette.current
     Column(
         Modifier.fillMaxSize().verticalScrollIfNeeded().padding(24.dp),
@@ -412,7 +507,11 @@ private fun Welcome(onContinue: () -> Unit, onSkip: () -> Unit) {
             Text("Continue", style = Type.body, color = palette.background)
         }
         Box(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).clickable(onClick = onSkip).padding(vertical = 15.dp),
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(onClick = onSkip)
+                .padding(vertical = 15.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text("Not now", style = Type.body, color = palette.muted)
@@ -421,11 +520,14 @@ private fun Welcome(onContinue: () -> Unit, onSkip: () -> Unit) {
 }
 
 @Composable
-private fun Modifier.verticalScrollIfNeeded(): Modifier =
-    this.verticalScroll(androidx.compose.foundation.rememberScrollState())
+private fun Modifier.verticalScrollIfNeeded(): Modifier = this.verticalScroll(androidx.compose.foundation.rememberScrollState())
 
 @Composable
-private fun Reason(icon: ImageVector, title: String, body: String) {
+private fun Reason(
+    icon: ImageVector,
+    title: String,
+    body: String,
+) {
     val palette = LocalPalette.current
     Row(Modifier.padding(vertical = 7.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
         IconBadge(icon, palette.ink, palette.surface)

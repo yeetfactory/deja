@@ -8,23 +8,25 @@ import org.junit.Test
 class HealthTest {
     private val now = 1_000_000_000L
 
-    private val healthy = SystemState(
-        bluetoothPermission = Permission.GRANTED,
-        location = LocationAccess.PRECISE,
-        notificationPermission = Permission.GRANTED,
-        bluetoothOn = true,
-        wifiOn = true,
-        locationOn = true,
-        notificationsEnabled = true,
-    )
+    private val healthy =
+        SystemState(
+            bluetoothPermission = Permission.GRANTED,
+            location = LocationAccess.PRECISE,
+            notificationPermission = Permission.GRANTED,
+            bluetoothOn = true,
+            wifiOn = true,
+            locationOn = true,
+            notificationsEnabled = true,
+        )
 
-    private val working = ScanJournal(
-        lastBluetoothOk = now - 1000,
-        lastWifiOk = now - 1000,
-        lastFixAt = now - 1000,
-        lastFixAccuracy = 12f,
-        lastBurstAt = now - 1000,
-    )
+    private val working =
+        ScanJournal(
+            lastBluetoothOk = now - 1000,
+            lastWifiOk = now - 1000,
+            lastFixAt = now - 1000,
+            lastFixAccuracy = 12f,
+            lastBurstAt = now - 1000,
+        )
 
     private fun report(
         system: SystemState = healthy,

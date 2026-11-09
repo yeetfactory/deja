@@ -2,16 +2,35 @@ package dev.rishikesh.deja.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
@@ -36,18 +55,24 @@ val Gutter = 16.dp
 
 /** Shared by every list of live devices, so tint always means the same thing. */
 @Composable
-private fun BlipRow(blip: Blip, now: Long, onOpen: (Long) -> Unit) {
+private fun BlipRow(
+    blip: Blip,
+    now: Long,
+    onOpen: (Long) -> Unit,
+) {
     val palette = LocalPalette.current
-    val (tint, badge) = when {
-        blip.category == Category.TRACKER && !blip.owned -> palette.alert to palette.alertSoft
-        blip.returning || blip.starred -> palette.accent to palette.accentSoft
-        else -> palette.ink to palette.neutralSoft
-    }
-    val what = when {
-        blip.returning -> "Back again"
-        blip.subtitle.isNotEmpty() -> blip.subtitle
-        else -> blip.category.label
-    }
+    val (tint, badge) =
+        when {
+            blip.category == Category.TRACKER && !blip.owned -> palette.alert to palette.alertSoft
+            blip.returning || blip.starred -> palette.accent to palette.accentSoft
+            else -> palette.ink to palette.neutralSoft
+        }
+    val what =
+        when {
+            blip.returning -> "Back again"
+            blip.subtitle.isNotEmpty() -> blip.subtitle
+            else -> blip.category.label
+        }
     ListRow(
         icon = blip.category.icon,
         tint = tint,
@@ -60,16 +85,20 @@ private fun BlipRow(blip: Blip, now: Long, onOpen: (Long) -> Unit) {
 }
 
 @Composable
-private fun StatusStrip(report: HealthReport, onHealth: () -> Unit) {
+private fun StatusStrip(
+    report: HealthReport,
+    onHealth: () -> Unit,
+) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         report.all.forEach { capability ->
-            val icon = when (capability.level) {
-                Level.OK -> Icons.Outlined.CheckCircle
-                Level.WARNING -> Icons.Outlined.WarningAmber
-                Level.BLOCKED -> Icons.Outlined.ErrorOutline
-                Level.OFF -> Icons.Outlined.PauseCircle
-            }
-            Pill(capability.headline, icon, onClick = onHealth)
+            val icon =
+                when (capability.level) {
+                    Level.OK -> Icons.Outlined.CheckCircle
+                    Level.WARNING -> Icons.Outlined.WarningAmber
+                    Level.BLOCKED -> Icons.Outlined.ErrorOutline
+                    Level.OFF -> Icons.Outlined.PauseCircle
+                }
+            Pill(capability.headline, icon = icon, onClick = onHealth)
         }
     }
 }
@@ -78,11 +107,21 @@ private fun StatusStrip(report: HealthReport, onHealth: () -> Unit) {
 private enum class View { IN_RANGE, PRIVATE, WITH_YOU, NEW_HERE, REGULARS }
 
 private fun startOfToday(): Long =
-    LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    LocalDate
+        .now()
+        .atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
 
 /** One count that also filters the list, so a number is never a dead end. */
 @Composable
-private fun GlanceCount(value: String, label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun GlanceCount(
+    value: String,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val palette = LocalPalette.current
     Column(
         modifier
@@ -113,18 +152,33 @@ private fun SummaryCard(
     val palette = LocalPalette.current
     val nearby = live.blips.size
     val listening = !paused && live.listening && canScan
-    val (title, detail) = when {
-        warning != null -> "${warning.deviceName} may be following you" to warning.summary.ifEmpty { "Seen at several separate places." }
-        paused -> "Paused" to "Déjà isn't listening until you resume."
-        !listening -> "Not listening" to "Nothing new can be heard right now."
-        else -> GlanceEngine.headline(glance) to GlanceEngine.detail(glance, nearby)
-    }
+    val (title, detail) =
+        when {
+            warning != null -> {
+                "${warning.deviceName} may be following you" to
+                    warning.summary.ifEmpty { "Seen at several separate places." }
+            }
+
+            paused -> {
+                "Paused" to "Déjà isn't listening until you resume."
+            }
+
+            !listening -> {
+                "Not listening" to "Nothing new can be heard right now."
+            }
+
+            else -> {
+                GlanceEngine.headline(glance) to GlanceEngine.detail(glance, nearby)
+            }
+        }
+
     fun toggle(target: View) = onView(if (view == target) View.IN_RANGE else target)
     val alert = warning != null
-    val base = Modifier
-        .fillMaxWidth()
-        .clip(RoundedCornerShape(16.dp))
-        .background(if (alert) palette.alertSoft else palette.surface)
+    val base =
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (alert) palette.alertSoft else palette.surface)
 
     Column(base.padding(top = 14.dp, bottom = 8.dp)) {
         val head = if (warning != null) Modifier.clickable { onOpenEvent(warning.id) } else Modifier
@@ -138,9 +192,19 @@ private fun SummaryCard(
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             val unknown = glance.learning || !glance.placeKnown
-            GlanceCount(glance.withYou.size.toString(), "With you today", view == View.WITH_YOU, Modifier.weight(1f)) { toggle(View.WITH_YOU) }
-            GlanceCount(if (unknown) "–" else glance.newHere.size.toString(), "New here", view == View.NEW_HERE, Modifier.weight(1f)) { toggle(View.NEW_HERE) }
-            GlanceCount(if (unknown) "–" else glance.regulars.size.toString(), "Regulars", view == View.REGULARS, Modifier.weight(1f)) { toggle(View.REGULARS) }
+            GlanceCount(
+                glance.withYou.size.toString(),
+                "With you today",
+                view == View.WITH_YOU,
+                onClick = { toggle(View.WITH_YOU) },
+                modifier = Modifier.weight(1f),
+            )
+            GlanceCount(if (unknown) "–" else glance.newHere.size.toString(), "New here", view == View.NEW_HERE, onClick = {
+                toggle(View.NEW_HERE)
+            }, modifier = Modifier.weight(1f))
+            GlanceCount(if (unknown) "–" else glance.regulars.size.toString(), "Regulars", view == View.REGULARS, onClick = {
+                toggle(View.REGULARS)
+            }, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -159,21 +223,24 @@ fun NearbyScreen(
     onHealth: () -> Unit,
     onOpen: (Long) -> Unit,
     onOpenEvent: (Long) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val palette = LocalPalette.current
     var view by rememberSaveable { mutableStateOf(View.IN_RANGE) }
-    val status = when {
-        paused -> "Paused by you"
-        !live.listening -> "Not scanning"
-        !report.canScan -> "Waiting for a radio"
-        live.placeName != null -> "Listening at ${live.placeName}"
-        else -> "Listening, place not known yet"
-    }
-    val ranked = live.inRange.sortedWith(
-        compareByDescending<Blip> { it.category == Category.TRACKER && !it.owned }
-            .thenByDescending { it.returning }
-            .thenByDescending { it.rssi },
-    )
+    val status =
+        when {
+            paused -> "Paused by you"
+            !live.listening -> "Not scanning"
+            !report.canScan -> "Waiting for a radio"
+            live.placeName != null -> "Listening at ${live.placeName}"
+            else -> "Listening, place not known yet"
+        }
+    val ranked =
+        live.inRange.sortedWith(
+            compareByDescending<Blip> { it.category == Category.TRACKER && !it.owned }
+                .thenByDescending { it.returning }
+                .thenByDescending { it.rssi },
+        )
     val worst = report.worst?.takeIf { it.level == Level.BLOCKED }
 
     // A summary this coarse only needs refreshing when the devices, the place or the minute changes.
@@ -188,7 +255,7 @@ fun NearbyScreen(
         value = runCatching { repository.dao.devicesByIds(glance.withYou.toList()) }.getOrDefault(emptyList())
     }
 
-    LazyColumn(Modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
+    LazyColumn(modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
         item {
             Header("Nearby", status) {
                 Pill(
@@ -200,7 +267,9 @@ fun NearbyScreen(
             if (live.simulated) Note("Simulated data, not real devices", Modifier.padding(bottom = 8.dp))
 
             journal.serviceError?.let { error ->
-                Banner("Scanning stopped", "$error.", Icons.Outlined.ErrorOutline, alert = true, action = "Restart scanning", onAction = { onRecover(Recovery.RESUME) })
+                Banner("Scanning stopped", "$error.", Icons.Outlined.ErrorOutline, alert = true, action = "Restart scanning", onAction = {
+                    onRecover(Recovery.RESUME)
+                })
             }
             if (worst != null) {
                 Banner(
@@ -224,8 +293,8 @@ fun NearbyScreen(
             StatusStrip(report, onHealth)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Pill("In range ${live.inRange.size}", active = view == View.IN_RANGE) { view = View.IN_RANGE }
-                Pill("Private addresses ${live.privateAddresses.size}", active = view == View.PRIVATE) { view = View.PRIVATE }
+                Pill("In range ${live.inRange.size}", active = view == View.IN_RANGE, onClick = { view = View.IN_RANGE })
+                Pill("Private addresses ${live.privateAddresses.size}", active = view == View.PRIVATE, onClick = { view = View.PRIVATE })
             }
             Spacer(Modifier.height(6.dp))
             when (view) {
@@ -236,24 +305,40 @@ fun NearbyScreen(
                     )
                     BlipGroup(live.privateAddresses.sortedByDescending { it.rssi }, "No private addresses heard recently.", now, onOpen)
                 }
-                View.IN_RANGE -> BlipGroup(
-                    ranked,
-                    when {
-                        paused -> "Scanning is paused. Your saved history is still in Activity and Devices."
-                        !report.canScan -> "Nothing can be heard until scanning is fixed above."
-                        else -> "Listening. The first results take about 15 seconds."
-                    },
-                    now,
-                    onOpen,
-                )
+
+                View.IN_RANGE -> {
+                    BlipGroup(
+                        ranked,
+                        when {
+                            paused -> "Scanning is paused. Your saved history is still in Activity and Devices."
+                            !report.canScan -> "Nothing can be heard until scanning is fixed above."
+                            else -> "Listening. The first results take about 15 seconds."
+                        },
+                        now,
+                        onOpen,
+                    )
+                }
+
                 View.NEW_HERE -> {
                     Note("First heard at this place in the last day.", Modifier.padding(bottom = 10.dp))
-                    BlipGroup(ranked.filter { it.deviceId in glance.newHere }, emptyGlanceText(glance, "Nothing new here right now."), now, onOpen)
+                    BlipGroup(
+                        ranked.filter { it.deviceId in glance.newHere },
+                        emptyGlanceText(glance, "Nothing new here right now."),
+                        now,
+                        onOpen,
+                    )
                 }
+
                 View.REGULARS -> {
                     Note("Heard at this place before today. Usually neighbours and your own gear.", Modifier.padding(bottom = 10.dp))
-                    BlipGroup(ranked.filter { it.deviceId in glance.regulars }, emptyGlanceText(glance, "No regulars in range right now."), now, onOpen)
+                    BlipGroup(
+                        ranked.filter { it.deviceId in glance.regulars },
+                        emptyGlanceText(glance, "No regulars in range right now."),
+                        now,
+                        onOpen,
+                    )
                 }
+
                 View.WITH_YOU -> {
                     Note(
                         "Heard today at places that are clearly apart. This is an early hint, not an alert: your own gear and people you're with will show up here too.",
@@ -280,14 +365,22 @@ fun NearbyScreen(
     }
 }
 
-private fun emptyGlanceText(glance: Glance, otherwise: String) = when {
+private fun emptyGlanceText(
+    glance: Glance,
+    otherwise: String,
+) = when {
     !glance.placeKnown -> "This needs to know your place first."
     glance.learning -> "Déjà is still learning this place. Give it a day."
     else -> otherwise
 }
 
 @Composable
-private fun BlipGroup(blips: List<Blip>, empty: String, now: Long, onOpen: (Long) -> Unit) {
+private fun BlipGroup(
+    blips: List<Blip>,
+    empty: String,
+    now: Long,
+    onOpen: (Long) -> Unit,
+) {
     Group {
         if (blips.isEmpty()) GroupText(empty)
         blips.forEachIndexed { index, blip ->

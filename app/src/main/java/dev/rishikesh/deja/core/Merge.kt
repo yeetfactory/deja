@@ -33,7 +33,10 @@ object Merge {
     )
 
     /** Combines two packets from one address in one burst, keeping the better classification. */
-    fun packets(a: Observation, b: Observation): Observation {
+    fun packets(
+        a: Observation,
+        b: Observation,
+    ): Observation {
         val best = if (better(b.category, b.typeConfidence, a.category, a.typeConfidence)) b else a
         return best.copy(
             name = b.name ?: a.name,
@@ -49,15 +52,24 @@ object Merge {
     }
 
     /** Stronger evidence wins. Equal evidence only fills a gap, so a device does not flicker. */
-    private fun better(new: Category, newConfidence: TypeConfidence, old: Category, oldConfidence: TypeConfidence) =
-        newConfidence > oldConfidence ||
-            (newConfidence == oldConfidence && (old == Category.UNKNOWN || new == old))
+    private fun better(
+        new: Category,
+        newConfidence: TypeConfidence,
+        old: Category,
+        oldConfidence: TypeConfidence,
+    ) = newConfidence > oldConfidence ||
+        (newConfidence == oldConfidence && (old == Category.UNKNOWN || new == old))
 
     /**
      * Applies one observation to a stored device. The user's label, flags and manual category
      * always survive; the automatic conclusion underneath keeps improving so it can be restored.
      */
-    fun device(previous: Device, obs: Observation, placeId: Long?, now: Long): Device {
+    fun device(
+        previous: Device,
+        obs: Observation,
+        placeId: Long?,
+        now: Long,
+    ): Device {
         val adopt = better(obs.category, obs.typeConfidence, previous.autoCategory, previous.typeConfidence)
         val auto = if (adopt) obs.category else previous.autoCategory
         return previous.copy(
@@ -81,7 +93,11 @@ object Merge {
         )
     }
 
-    fun newDevice(obs: Observation, placeId: Long?, now: Long) = Device(
+    fun newDevice(
+        obs: Observation,
+        placeId: Long?,
+        now: Long,
+    ) = Device(
         key = obs.key,
         radio = obs.radio,
         broadcastName = obs.name,

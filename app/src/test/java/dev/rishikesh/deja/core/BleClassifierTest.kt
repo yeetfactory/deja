@@ -71,7 +71,10 @@ class BleClassifierTest {
     }
 
     @Test fun `find my status bits add a word but never make a tracker`() {
-        listOf(0x10 to "Apple Find My broadcast · Possible AirTag", 0x20 to "Apple Find My broadcast · Possible accessory").forEach { (status, text) ->
+        listOf(
+            0x10 to "Apple Find My broadcast · Possible AirTag",
+            0x20 to "Apple Find My broadcast · Possible accessory",
+        ).forEach { (status, text) ->
             val result = classify(separated(status))
             assertEquals(Category.FIND_MY, result.category)
             assertEquals(text, result.descriptor)

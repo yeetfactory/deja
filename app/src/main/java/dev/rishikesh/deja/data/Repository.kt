@@ -24,10 +24,18 @@ data class Alert(
     val summary: String,
 )
 
-data class IngestResult(val seen: List<Device>, val returningIds: Set<Long>, val alerts: List<Alert>)
+data class IngestResult(
+    val seen: List<Device>,
+    val returningIds: Set<Long>,
+    val alerts: List<Alert>,
+)
 
 /** The user's alert switches, as the rules need them. */
-data class AlertPrefs(val following: Boolean = true, val watched: Boolean = true, val newTracker: Boolean = false)
+data class AlertPrefs(
+    val following: Boolean = true,
+    val watched: Boolean = true,
+    val newTracker: Boolean = false,
+)
 
 /** What to keep, and for how long. */
 data class RetentionPolicy(
@@ -37,34 +45,42 @@ data class RetentionPolicy(
     val keepSavedHistory: Boolean = true,
 )
 
-class Repository(private val db: DejaDatabase) {
+class Repository(
+    private val db: DejaDatabase,
+) {
     val dao: DejaDao = db.dao()
 
     /** A possible new place, held until a second fix agrees with it. */
     private var candidate: GeoFix? = null
 
     /** Finds the place at this fix, or null when the fix cannot honestly be placed yet. */
-    suspend fun resolvePlace(fix: GeoFix): Place? = db.withTransaction {
-        when (val resolution = PlaceClusterer.resolve(dao.places(), fix, candidate)) {
-            is Resolution.Known -> {
-                candidate = null
-                resolution.updated?.let { dao.updatePlace(it) }
-                resolution.updated ?: resolution.place
+    suspend fun resolvePlace(fix: GeoFix): Place? =
+        db.withTransaction {
+            when (val resolution = PlaceClusterer.resolve(dao.places(), fix, candidate)) {
+                is Resolution.Known -> {
+                    candidate = null
+                    resolution.updated?.let { dao.updatePlace(it) }
+                    resolution.updated ?: resolution.place
+                }
+
+                is Resolution.Create -> {
+                    candidate = null
+                    val id = dao.insertPlace(Place(name = fix.name ?: "New place", lat = fix.lat, lng = fix.lng))
+                    val name = fix.name ?: "Place $id"
+                    if (fix.name == null) dao.autoNamePlace(id, name)
+                    Place(id = id, name = name, lat = fix.lat, lng = fix.lng)
+                }
+
+                is Resolution.Candidate -> {
+                    candidate = resolution.fix
+                    null
+                }
+
+                Resolution.Unresolved -> {
+                    null
+                }
             }
-            is Resolution.Create -> {
-                candidate = null
-                val id = dao.insertPlace(Place(name = fix.name ?: "New place", lat = fix.lat, lng = fix.lng))
-                val name = fix.name ?: "Place $id"
-                if (fix.name == null) dao.autoNamePlace(id, name)
-                Place(id = id, name = name, lat = fix.lat, lng = fix.lng)
-            }
-            is Resolution.Candidate -> {
-                candidate = resolution.fix
-                null
-            }
-            Resolution.Unresolved -> null
         }
-    }
 
     suspend fun ingest(
         batch: List<Observation>,
@@ -72,74 +88,84 @@ class Repository(private val db: DejaDatabase) {
         accuracy: Float?,
         now: Long,
         prefs: AlertPrefs = AlertPrefs(),
-    ): IngestResult = db.withTransaction {
-        val places = dao.places().associateBy { it.id }
-        val seen = mutableListOf<Device>()
-        val returning = mutableSetOf<Long>()
-        val alerts = mutableListOf<Alert>()
+    ): IngestResult =
+        db.withTransaction {
+            val places = dao.places().associateBy { it.id }
+            val seen = mutableListOf<Device>()
+            val returning = mutableSetOf<Long>()
+            val alerts = mutableListOf<Alert>()
 
-        for (obs in batch) {
-            val previous = dao.deviceByKey(obs.key)
-            val time = obs.observedAt ?: now
-            var device = if (previous != null) {
-                Merge.device(previous, obs, place?.id, time)
-            } else {
-                val fresh = Merge.newDevice(obs, place?.id, time)
-                fresh.copy(id = dao.insertDevice(fresh))
-            }
+            for (obs in batch) {
+                val previous = dao.deviceByKey(obs.key)
+                val time = obs.observedAt ?: now
+                var device =
+                    if (previous != null) {
+                        Merge.device(previous, obs, place?.id, time)
+                    } else {
+                        val fresh = Merge.newDevice(obs, place?.id, time)
+                        fresh.copy(id = dao.insertDevice(fresh))
+                    }
 
-            val lastHere = dao.lastSightingAt(device.id, place?.id)
-            if (lastHere == null || time - lastHere >= SIGHTING_INTERVAL) {
-                dao.insertSighting(
-                    Sighting(deviceId = device.id, placeId = place?.id, time = time, rssi = obs.rssi, accuracy = accuracy),
-                )
-            }
+                val lastHere = dao.lastSightingAt(device.id, place?.id)
+                if (lastHere == null || time - lastHere >= SIGHTING_INTERVAL) {
+                    dao.insertSighting(
+                        Sighting(deviceId = device.id, placeId = place?.id, time = time, rssi = obs.rssi, accuracy = accuracy),
+                    )
+                }
 
-            val from = previous?.lastPlaceId
-            val moved = PlaceClusterer.apart(places[from], place, accuracy)
-            val judged = judge(previous, device, time, moved)
-            if (judged != null) {
-                val (verdict, summary, evidence) = judged
-                val allowed = when (verdict.type) {
-                    EventType.FOLLOWING -> prefs.following
-                    EventType.RETURNED -> prefs.watched
-                    EventType.NEW_TRACKER -> prefs.newTracker
-                    EventType.NEW_FIND_MY -> false
+                val from = previous?.lastPlaceId
+                val moved = PlaceClusterer.apart(places[from], place, accuracy)
+                val judged = judge(previous, device, time, moved)
+                if (judged != null) {
+                    val (verdict, summary, evidence) = judged
+                    val allowed =
+                        when (verdict.type) {
+                            EventType.FOLLOWING -> prefs.following
+                            EventType.RETURNED -> prefs.watched
+                            EventType.NEW_TRACKER -> prefs.newTracker
+                            EventType.NEW_FIND_MY -> false
+                        }
+                    val delivery =
+                        when {
+                            !verdict.notify -> Delivery.NOT_ELIGIBLE
+                            allowed -> Delivery.PENDING
+                            else -> Delivery.DISABLED_IN_SETTINGS
+                        }
+                    val eventId =
+                        dao.insertEvent(
+                            Event(
+                                deviceId = device.id,
+                                type = verdict.type,
+                                time = time,
+                                fromPlaceId = from,
+                                toPlaceId = place?.id,
+                                eligible = verdict.notify,
+                                delivery = delivery,
+                                summary = summary,
+                                evidence = evidence,
+                            ),
+                        )
+                    if (verdict.type == EventType.RETURNED || verdict.type == EventType.FOLLOWING) {
+                        returning += device.id
+                        // The cooldown runs even when the alert is switched off, or this would log every burst.
+                        if (verdict.notify) device = device.copy(lastAlertAt = time)
+                    }
+                    if (delivery == Delivery.PENDING) {
+                        alerts += Alert(eventId, device, verdict.type, places[from]?.name, place?.name, summary)
+                    }
                 }
-                val delivery = when {
-                    !verdict.notify -> Delivery.NOT_ELIGIBLE
-                    allowed -> Delivery.PENDING
-                    else -> Delivery.DISABLED_IN_SETTINGS
-                }
-                val eventId = dao.insertEvent(
-                    Event(
-                        deviceId = device.id,
-                        type = verdict.type,
-                        time = time,
-                        fromPlaceId = from,
-                        toPlaceId = place?.id,
-                        eligible = verdict.notify,
-                        delivery = delivery,
-                        summary = summary,
-                        evidence = evidence,
-                    ),
-                )
-                if (verdict.type == EventType.RETURNED || verdict.type == EventType.FOLLOWING) {
-                    returning += device.id
-                    // The cooldown runs even when the alert is switched off, or this would log every burst.
-                    if (verdict.notify) device = device.copy(lastAlertAt = time)
-                }
-                if (delivery == Delivery.PENDING) {
-                    alerts += Alert(eventId, device, verdict.type, places[from]?.name, place?.name, summary)
-                }
+                dao.updateDevice(device)
+                seen += device
             }
-            dao.updateDevice(device)
-            seen += device
+            IngestResult(seen, returning, alerts)
         }
-        IngestResult(seen, returning, alerts)
-    }
 
-    private suspend fun judge(previous: Device?, device: Device, now: Long, moved: Boolean): Triple<Verdict, String, String>? {
+    private suspend fun judge(
+        previous: Device?,
+        device: Device,
+        now: Long,
+        moved: Boolean,
+    ): Triple<Verdict, String, String>? {
         if (previous != null && FollowEngine.eligible(device) && MatchEngine.cooledDown(previous, now)) {
             val since = now - FollowEngine.WINDOW
             if (dao.distinctPlacesSince(device.id, since) >= FollowEngine.MIN_PLACES) {
@@ -154,16 +180,33 @@ class Repository(private val db: DejaDatabase) {
             }
         }
         val verdict = MatchEngine.judge(previous, device, now, moved) ?: return null
-        val summary = when (verdict.type) {
-            EventType.NEW_TRACKER -> device.evidence.lineSequence().firstOrNull().orEmpty()
-            EventType.RETURNED -> "Away for ${FollowEngine.duration(now - previous!!.lastSeen)}."
-            else -> ""
-        }
+        val summary =
+            when (verdict.type) {
+                EventType.NEW_TRACKER -> {
+                    device.evidence
+                        .lineSequence()
+                        .firstOrNull()
+                        .orEmpty()
+                }
+
+                EventType.RETURNED -> {
+                    "Away for ${FollowEngine.duration(now - previous!!.lastSeen)}."
+                }
+
+                else -> {
+                    ""
+                }
+            }
         return Triple(verdict, summary, "")
     }
 
     /** The summary for the top of Nearby. */
-    suspend fun glance(inRange: List<Long>, placeId: Long?, dayStart: Long, now: Long): Glance {
+    suspend fun glance(
+        inRange: List<Long>,
+        placeId: Long?,
+        dayStart: Long,
+        now: Long,
+    ): Glance {
         val places = dao.places().associateBy { it.id }
         val withYou = GlanceEngine.withYou(dao.devicePlacesSince(dayStart), places)
         if (placeId == null) return Glance(withYou = withYou)
@@ -177,41 +220,48 @@ class Repository(private val db: DejaDatabase) {
     }
 
     /** Saves only the user's choices, so a scan running at the same moment is not overwritten. */
-    suspend fun updateFlags(device: Device) =
-        dao.updateFlags(device.id, device.label, device.starred, device.ignored, device.owned)
+    suspend fun updateFlags(device: Device) = dao.updateFlags(device.id, device.label, device.starred, device.ignored, device.owned)
 
     /** The device stops alerting, so its open alerts are settled too. */
-    suspend fun markMine(deviceId: Long) = db.withTransaction {
-        dao.markOwned(deviceId)
-        dao.dismissEventsFor(deviceId)
-    }
+    suspend fun markMine(deviceId: Long) =
+        db.withTransaction {
+            dao.markOwned(deviceId)
+            dao.dismissEventsFor(deviceId)
+        }
 
-    suspend fun markIgnored(deviceId: Long) = db.withTransaction {
-        dao.markIgnored(deviceId)
-        dao.dismissEventsFor(deviceId)
-    }
+    suspend fun markIgnored(deviceId: Long) =
+        db.withTransaction {
+            dao.markIgnored(deviceId)
+            dao.dismissEventsFor(deviceId)
+        }
 
     /** Forgets where and when a device was seen, while keeping its name and flags. */
-    suspend fun deleteDeviceHistory(deviceId: Long) = db.withTransaction {
-        dao.deleteSightings(deviceId)
-        dao.deleteEvents(deviceId)
-        dao.resetDeviceHistory(deviceId)
-        dao.deleteUnusedPlaces()
-    }
+    suspend fun deleteDeviceHistory(deviceId: Long) =
+        db.withTransaction {
+            dao.deleteSightings(deviceId)
+            dao.deleteEvents(deviceId)
+            dao.resetDeviceHistory(deviceId)
+            dao.deleteUnusedPlaces()
+        }
 
-    suspend fun deleteDevice(deviceId: Long) = db.withTransaction {
-        dao.deleteDevice(deviceId)
-        dao.deleteUnusedPlaces()
-    }
+    suspend fun deleteDevice(deviceId: Long) =
+        db.withTransaction {
+            dao.deleteDevice(deviceId)
+            dao.deleteUnusedPlaces()
+        }
 
-    suspend fun clearAll() = db.withTransaction {
-        dao.deleteAllDevices()
-        dao.deleteAllPlaces()
-        candidate = null
-    }
+    suspend fun clearAll() =
+        db.withTransaction {
+            dao.deleteAllDevices()
+            dao.deleteAllPlaces()
+            candidate = null
+        }
 
     /** Folds [fromId] into [intoId], so everything that happened there now happened at [intoId]. */
-    suspend fun mergePlaces(fromId: Long, intoId: Long) = db.withTransaction {
+    suspend fun mergePlaces(
+        fromId: Long,
+        intoId: Long,
+    ) = db.withTransaction {
         if (fromId == intoId) return@withTransaction
         val places = dao.places().associateBy { it.id }
         val from = places[fromId] ?: return@withTransaction
@@ -240,7 +290,10 @@ class Repository(private val db: DejaDatabase) {
     }
 
     /** Applies retention. Named devices keep their row however old their history gets. */
-    suspend fun prune(now: Long, policy: RetentionPolicy) = db.withTransaction {
+    suspend fun prune(
+        now: Long,
+        policy: RetentionPolicy,
+    ) = db.withTransaction {
         val history = now - policy.historyDays * MatchEngine.DAY
         dao.pruneSightings(history, policy.keepSavedHistory)
         dao.pruneEvents(history, policy.keepSavedHistory)

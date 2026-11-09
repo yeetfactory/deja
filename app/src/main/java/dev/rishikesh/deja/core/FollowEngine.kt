@@ -57,10 +57,14 @@ object FollowEngine {
      * A private address is excluded even when it repeats: it can only mean this one address, and
      * in practice the ones that keep up with you are your own phone and watch.
      */
-    fun eligible(device: Device): Boolean =
-        !device.owned && !device.ignored && device.identity != IdentityConfidence.ADDRESS_ONLY
+    fun eligible(device: Device): Boolean = !device.owned && !device.ignored && device.identity != IdentityConfidence.ADDRESS_ONLY
 
-    private class Cluster(val lat: Double, val lng: Double, val slack: Double, val id: Int)
+    private class Cluster(
+        val lat: Double,
+        val lng: Double,
+        val slack: Double,
+        val id: Int,
+    )
 
     private fun slack(points: List<TrailPoint>): Double {
         val values = points.mapNotNull { it.accuracy?.toDouble() }.sorted()
@@ -75,16 +79,20 @@ object FollowEngine {
         trail.groupBy { it.placeId }.forEach { (placeId, points) ->
             val first = points.first()
             val own = slack(points)
-            val match = clusters.firstOrNull {
-                PlaceClusterer.metersBetween(first.lat, first.lng, it.lat, it.lng) <=
-                    MIN_SEPARATION_METERS + own + it.slack
-            }
+            val match =
+                clusters.firstOrNull {
+                    PlaceClusterer.metersBetween(first.lat, first.lng, it.lat, it.lng) <=
+                        MIN_SEPARATION_METERS + own + it.slack
+                }
             assigned[placeId] = match ?: Cluster(first.lat, first.lng, own, clusters.size).also { clusters += it }
         }
         return assigned
     }
 
-    private fun steps(trail: List<TrailPoint>, clusters: Map<Long, Cluster>): List<EvidenceStep> {
+    private fun steps(
+        trail: List<TrailPoint>,
+        clusters: Map<Long, Cluster>,
+    ): List<EvidenceStep> {
         val steps = mutableListOf<MutableList<TrailPoint>>()
         for (point in trail) {
             val current = steps.lastOrNull()
@@ -128,14 +136,16 @@ object FollowEngine {
         val span = trail.last().time - trail.first().time
         val widest = spread(distinct)
 
-        val following = distinct.size >= MIN_PLACES &&
-            trail.size >= MIN_OBSERVATIONS &&
-            span >= MIN_SPAN &&
-            widest >= MIN_SPREAD_METERS
+        val following =
+            distinct.size >= MIN_PLACES &&
+                trail.size >= MIN_OBSERVATIONS &&
+                span >= MIN_SPAN &&
+                widest >= MIN_SPREAD_METERS
 
-        val summary = "Seen ${trail.size} times at ${distinct.size} separate " +
-            "${if (distinct.size == 1) "place" else "places"} over ${duration(span)}" +
-            if (distinct.size > 1) ", up to ${distance(widest)} apart." else "."
+        val summary =
+            "Seen ${trail.size} times at ${distinct.size} separate " +
+                "${if (distinct.size == 1) "place" else "places"} over ${duration(span)}" +
+                if (distinct.size > 1) ", up to ${distance(widest)} apart." else "."
         return Assessment(following, summary, steps)
     }
 
@@ -148,30 +158,33 @@ object FollowEngine {
         }
     }
 
-    fun distance(meters: Double): String =
-        if (meters < 1000) "${(meters / 10).toInt() * 10} m" else "%.1f km".format(meters / 1000)
+    fun distance(meters: Double): String = if (meters < 1000) "${(meters / 10).toInt() * 10} m" else "%.1f km".format(meters / 1000)
 }
 
 /** Stores a timeline as text in the event row, so the alert stays explainable as sightings age out. */
 object EvidenceCodec {
     private const val FIELDS = 7
 
-    fun encode(steps: List<EvidenceStep>): String = steps.joinToString("\n") {
-        listOf(it.start, it.end, it.placeId, it.readings, it.strongestRssi, it.accuracy ?: "", it.placeName.replace('\n', ' '))
-            .joinToString("|")
-    }
+    fun encode(steps: List<EvidenceStep>): String =
+        steps.joinToString("\n") {
+            listOf(it.start, it.end, it.placeId, it.readings, it.strongestRssi, it.accuracy ?: "", it.placeName.replace('\n', ' '))
+                .joinToString("|")
+        }
 
-    fun decode(text: String): List<EvidenceStep> = text.lineSequence().mapNotNull { line ->
-        val parts = line.split("|", limit = FIELDS)
-        if (parts.size < FIELDS) return@mapNotNull null
-        EvidenceStep(
-            start = parts[0].toLongOrNull() ?: return@mapNotNull null,
-            end = parts[1].toLongOrNull() ?: return@mapNotNull null,
-            placeId = parts[2].toLongOrNull() ?: return@mapNotNull null,
-            readings = parts[3].toIntOrNull() ?: return@mapNotNull null,
-            strongestRssi = parts[4].toIntOrNull() ?: return@mapNotNull null,
-            accuracy = parts[5].toFloatOrNull(),
-            placeName = parts[6],
-        )
-    }.toList()
+    fun decode(text: String): List<EvidenceStep> =
+        text
+            .lineSequence()
+            .mapNotNull { line ->
+                val parts = line.split("|", limit = FIELDS)
+                if (parts.size < FIELDS) return@mapNotNull null
+                EvidenceStep(
+                    start = parts[0].toLongOrNull() ?: return@mapNotNull null,
+                    end = parts[1].toLongOrNull() ?: return@mapNotNull null,
+                    placeId = parts[2].toLongOrNull() ?: return@mapNotNull null,
+                    readings = parts[3].toIntOrNull() ?: return@mapNotNull null,
+                    strongestRssi = parts[4].toIntOrNull() ?: return@mapNotNull null,
+                    accuracy = parts[5].toFloatOrNull(),
+                    placeName = parts[6],
+                )
+            }.toList()
 }

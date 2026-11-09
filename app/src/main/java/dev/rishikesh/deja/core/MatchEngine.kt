@@ -5,7 +5,10 @@ import dev.rishikesh.deja.data.Device
 import dev.rishikesh.deja.data.EventType
 import dev.rishikesh.deja.data.IdentityConfidence
 
-data class Verdict(val type: EventType, val notify: Boolean)
+data class Verdict(
+    val type: EventType,
+    val notify: Boolean,
+)
 
 /** The rules for when a sighting is worth recording as an event, and worth a ping. */
 object MatchEngine {
@@ -21,7 +24,10 @@ object MatchEngine {
 
     const val ALERT_COOLDOWN = 6 * HOUR
 
-    fun cooledDown(device: Device, now: Long) = now - device.lastAlertAt >= ALERT_COOLDOWN
+    fun cooledDown(
+        device: Device,
+        now: Long,
+    ) = now - device.lastAlertAt >= ALERT_COOLDOWN
 
     /**
      * Following is judged separately by [FollowEngine], which needs the device's whole recent trail.
@@ -30,7 +36,12 @@ object MatchEngine {
      * @param current the device with this sighting applied.
      * @param moved whether the last place and this one are really apart, beyond location error.
      */
-    fun judge(previous: Device?, current: Device, now: Long, moved: Boolean): Verdict? {
+    fun judge(
+        previous: Device?,
+        current: Device,
+        now: Long,
+        moved: Boolean,
+    ): Verdict? {
         if (current.ignored) return null
 
         val newTracker = current.category == Category.TRACKER && previous?.category != Category.TRACKER

@@ -42,8 +42,11 @@ class MatchEngineTest {
         lastAlertAt = now - alertedAgo,
     )
 
-    private fun judge(previous: Device?, current: Device = previous ?: device(), moved: Boolean = false) =
-        MatchEngine.judge(previous, current, now, moved)
+    private fun judge(
+        previous: Device?,
+        current: Device = previous ?: device(),
+        moved: Boolean = false,
+    ) = MatchEngine.judge(previous, current, now, moved)
 
     @Test fun `a new ordinary device creates no event`() {
         assertNull(judge(null, device()))

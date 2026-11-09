@@ -58,17 +58,22 @@ object LiveState {
     fun setPlan(plan: ScanPlan) = state.update { it.copy(plan = plan) }
 
     /** A device stays listed for a couple of scan cycles, so one missed packet is not a departure. */
-    private fun ttl(plan: ScanPlan?) =
-        maxOf(MIN_TTL_MS, 5 * ((plan?.pauseMs ?: 0L) + (plan?.burstMs ?: 0L)) / 2)
+    private fun ttl(plan: ScanPlan?) = maxOf(MIN_TTL_MS, 5 * ((plan?.pauseMs ?: 0L) + (plan?.burstMs ?: 0L)) / 2)
 
-    fun publish(blips: List<Blip>, placeId: Long?, placeName: String?, now: Long) = state.update { current ->
+    fun publish(
+        blips: List<Blip>,
+        placeId: Long?,
+        placeName: String?,
+        now: Long,
+    ) = state.update { current ->
         val fresh = blips.mapTo(HashSet()) { it.deviceId }
         val kept = current.blips.filter { it.deviceId !in fresh && now - it.heardAt < ttl(current.plan) }
         current.copy(blips = kept + blips, placeId = placeId, placeName = placeName)
     }
 
     /** Drops what has aged out. Runs even when a scan fails, so nothing lingers as if still here. */
-    fun expire(now: Long) = state.update { current ->
-        current.copy(blips = current.blips.filter { now - it.heardAt < ttl(current.plan) })
-    }
+    fun expire(now: Long) =
+        state.update { current ->
+            current.copy(blips = current.blips.filter { now - it.heardAt < ttl(current.plan) })
+        }
 }

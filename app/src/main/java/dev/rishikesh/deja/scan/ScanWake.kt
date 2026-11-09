@@ -27,11 +27,16 @@ object ScanWake {
     }
 
     @Synchronized
-    fun acquire(context: Context, timeoutMs: Long) {
-        val current = lock ?: context.getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_TAG)
-            .apply { setReferenceCounted(false) }
-            .also { lock = it }
+    fun acquire(
+        context: Context,
+        timeoutMs: Long,
+    ) {
+        val current =
+            lock ?: context
+                .getSystemService(PowerManager::class.java)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_TAG)
+                .apply { setReferenceCounted(false) }
+                .also { lock = it }
         current.acquire(timeoutMs)
     }
 
@@ -40,14 +45,18 @@ object ScanWake {
         lock?.takeIf { it.isHeld }?.release()
     }
 
-    private fun alarmIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
-        context,
-        0,
-        Intent(context, DejaReceiver::class.java).setAction(DejaReceiver.ACTION_WAKE),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
+    private fun alarmIntent(context: Context): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(context, DejaReceiver::class.java).setAction(DejaReceiver.ACTION_WAKE),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
-    suspend fun sleep(context: Context, ms: Long) {
+    suspend fun sleep(
+        context: Context,
+        ms: Long,
+    ) {
         val alarms = context.getSystemService(AlarmManager::class.java)
         val intent = alarmIntent(context)
         alarms.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + ms, intent)

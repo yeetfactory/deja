@@ -53,13 +53,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -118,53 +118,60 @@ val HeadingGap = 6.dp
 /** Between any label and the text that explains it. */
 val TextGap = 3.dp
 
-private val Light = Palette(
-    background = Color(0xFFF6F6F3),
-    surface = Color(0xFFFFFFFF),
-    line = Color(0xFFE6E5E0),
-    ink = Color(0xFF15171A),
-    muted = Color(0xFF666B72),
-    faint = Color(0xFFA6AAAF),
-    accent = Color(0xFF2450E6),
-    accentSoft = Color(0xFFE9EEFD),
-    alert = Color(0xFFC8283A),
-    alertSoft = Color(0xFFFBEBED),
-    neutralSoft = Color(0xFFF0EFEB),
-)
+private val Light =
+    Palette(
+        background = Color(0xFFF6F6F3),
+        surface = Color(0xFFFFFFFF),
+        line = Color(0xFFE6E5E0),
+        ink = Color(0xFF15171A),
+        muted = Color(0xFF666B72),
+        faint = Color(0xFFA6AAAF),
+        accent = Color(0xFF2450E6),
+        accentSoft = Color(0xFFE9EEFD),
+        alert = Color(0xFFC8283A),
+        alertSoft = Color(0xFFFBEBED),
+        neutralSoft = Color(0xFFF0EFEB),
+    )
 
-private val Dark = Palette(
-    background = Color(0xFF101113),
-    surface = Color(0xFF18191C),
-    line = Color(0xFF2A2B2F),
-    ink = Color(0xFFF2F2EF),
-    muted = Color(0xFF9CA0A7),
-    faint = Color(0xFF62666C),
-    accent = Color(0xFF6C8CFA),
-    accentSoft = Color(0xFF1E2640),
-    alert = Color(0xFFF0505C),
-    alertSoft = Color(0xFF38191E),
-    neutralSoft = Color(0xFF232427),
-)
+private val Dark =
+    Palette(
+        background = Color(0xFF101113),
+        surface = Color(0xFF18191C),
+        line = Color(0xFF2A2B2F),
+        ink = Color(0xFFF2F2EF),
+        muted = Color(0xFF9CA0A7),
+        faint = Color(0xFF62666C),
+        accent = Color(0xFF6C8CFA),
+        accentSoft = Color(0xFF1E2640),
+        alert = Color(0xFFF0505C),
+        alertSoft = Color(0xFF38191E),
+        neutralSoft = Color(0xFF232427),
+    )
 
 val LocalPalette = compositionLocalOf { Light }
 
-private fun inter(weight: Int) = Font(
-    R.font.inter,
-    weight = FontWeight(weight),
-    variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
-)
+private fun inter(weight: Int) =
+    Font(
+        R.font.inter,
+        weight = FontWeight(weight),
+        variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
+    )
 
 val Inter = FontFamily(inter(400), inter(500), inter(600))
 
-private fun style(size: TextUnit, weight: Int, tracking: TextUnit = 0.sp, line: TextUnit = TextUnit.Unspecified) =
-    TextStyle(
-        fontFamily = Inter,
-        fontSize = size,
-        fontWeight = FontWeight(weight),
-        letterSpacing = tracking,
-        lineHeight = line,
-        fontFeatureSettings = "tnum, cv11",
-    )
+private fun style(
+    size: TextUnit,
+    weight: Int,
+    tracking: TextUnit = 0.sp,
+    line: TextUnit = TextUnit.Unspecified,
+) = TextStyle(
+    fontFamily = Inter,
+    fontSize = size,
+    fontWeight = FontWeight(weight),
+    letterSpacing = tracking,
+    lineHeight = line,
+    fontFeatureSettings = "tnum, cv11",
+)
 
 object Type {
     val display = style(32.sp, 600, (-0.7).sp, 38.sp)
@@ -201,78 +208,88 @@ private fun animatedPalette(target: Palette): Palette {
 fun DejaTheme(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val palette = animatedPalette(if (dark) Dark else Light)
-    val scheme = if (dark) {
-        darkColorScheme(
-            primary = palette.accent,
-            surface = palette.surface,
-            surfaceContainer = palette.surface,
-            surfaceContainerHigh = palette.surface,
-            onSurface = palette.ink,
-            onSurfaceVariant = palette.muted,
-            outline = palette.line,
-        )
-    } else {
-        lightColorScheme(
-            primary = palette.accent,
-            surface = palette.surface,
-            surfaceContainer = palette.surface,
-            surfaceContainerHigh = palette.surface,
-            onSurface = palette.ink,
-            onSurfaceVariant = palette.muted,
-            outline = palette.line,
-        )
-    }
+    val scheme =
+        if (dark) {
+            darkColorScheme(
+                primary = palette.accent,
+                surface = palette.surface,
+                surfaceContainer = palette.surface,
+                surfaceContainerHigh = palette.surface,
+                onSurface = palette.ink,
+                onSurfaceVariant = palette.muted,
+                outline = palette.line,
+            )
+        } else {
+            lightColorScheme(
+                primary = palette.accent,
+                surface = palette.surface,
+                surfaceContainer = palette.surface,
+                surfaceContainerHigh = palette.surface,
+                onSurface = palette.ink,
+                onSurfaceVariant = palette.muted,
+                outline = palette.line,
+            )
+        }
     CompositionLocalProvider(LocalPalette provides palette) {
         MaterialTheme(colorScheme = scheme, content = content)
     }
 }
 
 val Category.icon: ImageVector
-    get() = when (this) {
-        Category.TRACKER -> Icons.Outlined.Sell
-        Category.AUDIO -> Icons.Outlined.Headphones
-        Category.WEARABLE -> Icons.Outlined.Watch
-        Category.VEHICLE -> Icons.Outlined.DirectionsCar
-        Category.TV -> Icons.Outlined.Tv
-        Category.NETWORK -> Icons.Outlined.Wifi
-        Category.BEACON -> Icons.Outlined.Sensors
-        Category.FIND_MY -> Icons.Outlined.TravelExplore
-        Category.COMPUTER -> Icons.Outlined.Laptop
-        Category.TABLET -> Icons.Outlined.Tablet
-        Category.PHONE -> Icons.Outlined.Smartphone
-        Category.INPUT -> Icons.Outlined.Keyboard
-        Category.UNKNOWN -> Icons.Outlined.Bluetooth
-    }
+    get() =
+        when (this) {
+            Category.TRACKER -> Icons.Outlined.Sell
+            Category.AUDIO -> Icons.Outlined.Headphones
+            Category.WEARABLE -> Icons.Outlined.Watch
+            Category.VEHICLE -> Icons.Outlined.DirectionsCar
+            Category.TV -> Icons.Outlined.Tv
+            Category.NETWORK -> Icons.Outlined.Wifi
+            Category.BEACON -> Icons.Outlined.Sensors
+            Category.FIND_MY -> Icons.Outlined.TravelExplore
+            Category.COMPUTER -> Icons.Outlined.Laptop
+            Category.TABLET -> Icons.Outlined.Tablet
+            Category.PHONE -> Icons.Outlined.Smartphone
+            Category.INPUT -> Icons.Outlined.Keyboard
+            Category.UNKNOWN -> Icons.Outlined.Bluetooth
+        }
 
 val Category.label: String
-    get() = when (this) {
-        Category.TRACKER -> "Tracker"
-        Category.AUDIO -> "Audio"
-        Category.WEARABLE -> "Wearable"
-        Category.VEHICLE -> "Vehicle"
-        Category.TV -> "Display"
-        Category.NETWORK -> "Wi-Fi network"
-        Category.BEACON -> "Beacon"
-        Category.FIND_MY -> "Finding-network broadcast"
-        Category.COMPUTER -> "Computer"
-        Category.TABLET -> "Tablet"
-        Category.PHONE -> "Phone"
-        Category.INPUT -> "Keyboard or mouse"
-        Category.UNKNOWN -> "Bluetooth device"
-    }
+    get() =
+        when (this) {
+            Category.TRACKER -> "Tracker"
+            Category.AUDIO -> "Audio"
+            Category.WEARABLE -> "Wearable"
+            Category.VEHICLE -> "Vehicle"
+            Category.TV -> "Display"
+            Category.NETWORK -> "Wi-Fi network"
+            Category.BEACON -> "Beacon"
+            Category.FIND_MY -> "Finding-network broadcast"
+            Category.COMPUTER -> "Computer"
+            Category.TABLET -> "Tablet"
+            Category.PHONE -> "Phone"
+            Category.INPUT -> "Keyboard or mouse"
+            Category.UNKNOWN -> "Bluetooth device"
+        }
 
 /** The wall clock, ticking slowly enough that "20 s ago" stays honest without constant recomposition. */
 @Composable
-fun rememberNow(periodMs: Long = 5_000): State<Long> = produceState(System.currentTimeMillis(), periodMs) {
-    while (true) {
-        delay(periodMs)
-        value = System.currentTimeMillis()
+fun rememberNow(periodMs: Long = 5_000): State<Long> =
+    produceState(System.currentTimeMillis(), periodMs) {
+        while (true) {
+            delay(periodMs)
+            value = System.currentTimeMillis()
+        }
     }
-}
 
 @Composable
-fun IconBadge(icon: ImageVector, tint: Color, background: Color, size: Dp = 38.dp) {
-    Box(Modifier.size(size).clip(CircleShape).background(background), contentAlignment = Alignment.Center) {
+fun IconBadge(
+    icon: ImageVector,
+    tint: Color,
+    background: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = 38.dp,
+) {
+    Box(modifier.size(size).clip(CircleShape).background(background), contentAlignment = Alignment.Center) {
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size * 0.5f))
     }
 }
@@ -285,10 +302,11 @@ fun ListRow(
     badge: Color,
     title: String,
     subtitle: String?,
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    val base = Modifier.fillMaxWidth().heightIn(min = 56.dp)
+    val base = modifier.fillMaxWidth().heightIn(min = 56.dp)
     Row(
         (if (onClick != null) base.clickable(onClick = onClick) else base.semantics(mergeDescendants = true) {})
             .padding(horizontal = 16.dp, vertical = 13.dp),
@@ -311,13 +329,25 @@ fun ListRow(
 }
 
 @Composable
-fun Hairline(modifier: Modifier = Modifier, inset: Dp = 66.dp) {
-    Box(modifier.fillMaxWidth().padding(start = inset).height(1.dp).background(LocalPalette.current.line))
+fun Hairline(
+    modifier: Modifier = Modifier,
+    inset: Dp = 66.dp,
+) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .padding(start = inset)
+            .height(1.dp)
+            .background(LocalPalette.current.line),
+    )
 }
 
 /** A white group of rows on the paper background. */
 @Composable
-fun Group(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun Group(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     Column(
         modifier
             .fillMaxWidth()
@@ -327,7 +357,10 @@ fun Group(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun SectionLabel(text: String, modifier: Modifier = Modifier) {
+fun SectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
         text,
         style = Type.label,
@@ -337,7 +370,11 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Metric(value: String, label: String, modifier: Modifier = Modifier) {
+fun Metric(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier.semantics(mergeDescendants = true) {}) {
         Text(value, style = Type.number, color = LocalPalette.current.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(TextGap))
@@ -352,22 +389,25 @@ fun Metric(value: String, label: String, modifier: Modifier = Modifier) {
 @Composable
 fun Pill(
     text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     active: Boolean? = null,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
 ) {
     val palette = LocalPalette.current
     val on = active == true
-    val base = modifier
-        .minimumInteractiveComponentSize()
-        .clip(CircleShape)
-        .background(if (on) palette.ink else palette.surface)
-    Row(
-        (if (active == null) base.clickable(role = Role.Button, onClick = onClick) else base.selectable(selected = on, role = Role.Button, onClick = onClick))
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    val base =
+        modifier
+            .minimumInteractiveComponentSize()
+            .clip(CircleShape)
+            .background(if (on) palette.ink else palette.surface)
+    val pressable =
+        if (active == null) {
+            base.clickable(role = Role.Button, onClick = onClick)
+        } else {
+            base.selectable(selected = on, role = Role.Button, onClick = onClick)
+        }
+    Row(pressable.padding(horizontal = 14.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
         val color = if (on) palette.background else palette.ink
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
@@ -377,25 +417,30 @@ fun Pill(
     }
 }
 
-fun signalWord(rssi: Int): String = when {
-    rssi >= -55 -> "Very strong"
-    rssi >= -67 -> "Strong"
-    rssi >= -80 -> "Moderate"
-    else -> "Weak"
-}
+fun signalWord(rssi: Int): String =
+    when {
+        rssi >= -55 -> "Very strong"
+        rssi >= -67 -> "Strong"
+        rssi >= -80 -> "Moderate"
+        else -> "Weak"
+    }
 
 /** Four-step signal strength, so nobody has to read dBm. It measures signal, not distance. */
 @Composable
-fun SignalBars(rssi: Int) {
+fun SignalBars(
+    rssi: Int,
+    modifier: Modifier = Modifier,
+) {
     val palette = LocalPalette.current
-    val level = when {
-        rssi >= -55 -> 4
-        rssi >= -67 -> 3
-        rssi >= -80 -> 2
-        else -> 1
-    }
+    val level =
+        when {
+            rssi >= -55 -> 4
+            rssi >= -67 -> 3
+            rssi >= -80 -> 2
+            else -> 1
+        }
     val spoken = "${signalWord(rssi)} signal"
-    Row(Modifier.clearAndSetSemantics { contentDescription = spoken }, verticalAlignment = Alignment.Bottom) {
+    Row(modifier.clearAndSetSemantics { contentDescription = spoken }, verticalAlignment = Alignment.Bottom) {
         repeat(4) { i ->
             Box(
                 Modifier
@@ -409,7 +454,10 @@ fun SignalBars(rssi: Int) {
     }
 }
 
-fun ago(then: Long, now: Long): String {
+fun ago(
+    then: Long,
+    now: Long,
+): String {
     val minutes = ((now - then) / 60_000).coerceAtLeast(0)
     return when {
         minutes < 1 -> "Just now"
@@ -421,7 +469,10 @@ fun ago(then: Long, now: Long): String {
 }
 
 /** How recently something was heard, to the second, for live lists. */
-fun heard(then: Long, now: Long): String {
+fun heard(
+    then: Long,
+    now: Long,
+): String {
     val seconds = ((now - then) / 1000).coerceAtLeast(0)
     return when {
         seconds < 10 -> "heard just now"
@@ -432,9 +483,14 @@ fun heard(then: Long, now: Long): String {
 
 /** A screen title. Marked as a heading so TalkBack users can jump between sections. */
 @Composable
-fun Header(title: String, subtitle: String?, trailing: @Composable (() -> Unit)? = null) {
+fun Header(
+    title: String,
+    subtitle: String?,
+    modifier: Modifier = Modifier,
+    trailing: @Composable (() -> Unit)? = null,
+) {
     val palette = LocalPalette.current
-    Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 16.dp, bottom = 20.dp), verticalAlignment = Alignment.Top) {
+    Row(modifier.fillMaxWidth().padding(start = 4.dp, top = 16.dp, bottom = 20.dp), verticalAlignment = Alignment.Top) {
         Column(Modifier.weight(1f)) {
             Text(title, style = Type.display, color = palette.ink, modifier = Modifier.semantics { heading() })
             if (subtitle != null) {
@@ -447,9 +503,12 @@ fun Header(title: String, subtitle: String?, trailing: @Composable (() -> Unit)?
 }
 
 @Composable
-fun BackButton(onBack: () -> Unit) {
+fun BackButton(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
-        Modifier
+        modifier
             .padding(top = 4.dp, bottom = 4.dp)
             .size(48.dp)
             .clip(CircleShape)
@@ -466,17 +525,19 @@ fun Banner(
     title: String,
     body: String?,
     icon: ImageVector,
+    modifier: Modifier = Modifier,
     alert: Boolean = false,
     action: String? = null,
     onAction: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val palette = LocalPalette.current
-    val base = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 10.dp)
-        .clip(RoundedCornerShape(16.dp))
-        .background(if (alert) palette.alertSoft else palette.surface)
+    val base =
+        modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (alert) palette.alertSoft else palette.surface)
     Column((if (onClick != null) base.clickable(onClick = onClick) else base).padding(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(icon, if (alert) palette.alert else palette.ink, if (alert) palette.surface else palette.neutralSoft)
@@ -491,48 +552,68 @@ fun Banner(
         }
         if (action != null && onAction != null) {
             Spacer(Modifier.height(6.dp))
-            Pill(action, onClick = onAction)
+            Pill(action, onAction)
         }
     }
 }
 
 @Composable
-fun Note(text: String, modifier: Modifier = Modifier) {
+fun Note(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(text, style = Type.small, color = LocalPalette.current.muted, modifier = modifier.padding(horizontal = 4.dp))
 }
 
 @Composable
-fun GroupText(text: String) {
-    Text(text, style = Type.text, color = LocalPalette.current.muted, modifier = Modifier.padding(16.dp))
+fun GroupText(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(text, style = Type.text, color = LocalPalette.current.muted, modifier = modifier.padding(16.dp))
 }
 
 @Composable
-fun LoadingState() {
-    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+fun LoadingState(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = LocalPalette.current.accent, modifier = Modifier.semantics { contentDescription = "Loading" })
     }
 }
 
 @Composable
-fun ErrorState(message: String) {
-    Banner("Something went wrong", message, Icons.Outlined.ErrorOutline, alert = true)
+fun ErrorState(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Banner("Something went wrong", message, Icons.Outlined.ErrorOutline, modifier, alert = true)
 }
 
 /** A row that opens the next page, with the position so the list never looks like the whole story. */
 @Composable
-fun LoadMore(shown: Int, total: Int, onMore: () -> Unit) {
+fun LoadMore(
+    shown: Int,
+    total: Int,
+    onMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     if (total <= 0) return
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier.fillMaxWidth().padding(top = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Note("Showing %,d of %,d".format(shown, total))
-        if (shown < total) Pill("Show more", onClick = onMore)
+        if (shown < total) Pill("Show more", onMore)
     }
 }
 
 @Composable
-fun SwitchRow(title: String, detail: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+fun SwitchRow(
+    title: String,
+    detail: String?,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val palette = LocalPalette.current
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
             .padding(horizontal = 16.dp, vertical = 14.dp),
@@ -559,9 +640,9 @@ fun <T> Segmented(
     options: List<T>,
     selected: T,
     label: (T) -> String,
+    onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
     icon: ((T) -> ImageVector)? = null,
-    onSelect: (T) -> Unit,
 ) {
     val palette = LocalPalette.current
     val position by animateFloatAsState(options.indexOf(selected).toFloat(), tween(SLIDE_MS), label = "segment")
@@ -578,8 +659,7 @@ fun <T> Segmented(
                     size = Size(width - 6.dp.toPx(), size.height - 6.dp.toPx()),
                     cornerRadius = CornerRadius(9.dp.toPx()),
                 )
-            }
-            .selectableGroup(),
+            }.selectableGroup(),
     ) {
         options.forEach { option ->
             val chosen = option == selected
@@ -612,23 +692,30 @@ fun <T> ChoiceRow(
     options: List<T>,
     selected: T,
     label: (T) -> String,
-    icon: ((T) -> ImageVector)? = null,
     onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ((T) -> ImageVector)? = null,
 ) {
     val palette = LocalPalette.current
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
+    Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
         Text(title, style = Type.body, color = palette.ink)
         if (detail != null) {
             Spacer(Modifier.height(TextGap))
             Text(detail, style = Type.small, color = palette.muted)
         }
         Spacer(Modifier.height(12.dp))
-        Segmented(options, selected, label, icon = icon, onSelect = onSelect)
+        Segmented(options, selected, label, onSelect, icon = icon)
     }
 }
 
 @Composable
-fun ConfirmDialog(title: String, body: String, confirm: String, onConfirm: () -> Unit, onCancel: () -> Unit) {
+fun ConfirmDialog(
+    title: String,
+    body: String,
+    confirm: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onCancel,
         title = { Text(title, style = Type.title) },
@@ -639,7 +726,12 @@ fun ConfirmDialog(title: String, body: String, confirm: String, onConfirm: () ->
 }
 
 @Composable
-fun TextEntryDialog(title: String, initial: String, onSave: (String) -> Unit, onCancel: () -> Unit) {
+fun TextEntryDialog(
+    title: String,
+    initial: String,
+    onSave: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
     var value by rememberSaveable { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onCancel,
@@ -661,13 +753,18 @@ fun TextEntryDialog(title: String, initial: String, onSave: (String) -> Unit, on
 /** The three states of anything loaded from the database. */
 sealed interface Async<out T> {
     data object Loading : Async<Nothing>
-    data class Ready<T>(val value: T) : Async<T>
-    data class Failed(val message: String) : Async<Nothing>
+
+    data class Ready<T>(
+        val value: T,
+    ) : Async<T>
+
+    data class Failed(
+        val message: String,
+    ) : Async<Nothing>
 }
 
 fun <T> Flow<T>.asAsync(): Flow<Async<T>> =
     map<T, Async<T>> { Async.Ready(it) }.catch { emit(Async.Failed("Your saved data could not be read. ${it.message.orEmpty()}")) }
 
 @Composable
-fun <T> Flow<T>.collectAsync(): State<Async<T>> =
-    remember(this) { asAsync() }.collectAsStateWithLifecycle(Async.Loading)
+fun <T> Flow<T>.collectAsync(): State<Async<T>> = remember(this) { asAsync() }.collectAsStateWithLifecycle(Async.Loading)

@@ -1,9 +1,16 @@
 package dev.rishikesh.deja.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -26,15 +33,18 @@ fun HealthScreen(
     now: Long,
     onBack: () -> Unit,
     onRecover: (Recovery) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     fun at(time: Long) = if (time > 0) Health.ago(time, now) else "Never"
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Gutter)) {
+    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Gutter)) {
         item {
             BackButton(onBack)
             Header("Scanner health", "What is working, and what to do when it isn't.")
             journal.serviceError?.let {
-                Banner("Scanning stopped", "$it.", Icons.Outlined.ErrorOutline, alert = true, action = "Restart scanning", onAction = { onRecover(Recovery.RESUME) })
+                Banner("Scanning stopped", "$it.", Icons.Outlined.ErrorOutline, alert = true, action = "Restart scanning", onAction = {
+                    onRecover(Recovery.RESUME)
+                })
             }
             report.all.forEach { CapabilityCard(it, onRecover) }
             Spacer(Modifier.height(10.dp))
@@ -49,7 +59,10 @@ fun HealthScreen(
                 Hairline(inset = 16.dp)
                 DetailRow("Last location fix", at(journal.lastFixAt))
                 Hairline(inset = 16.dp)
-                DetailRow("Failed scan cycles", "%,d".format(journal.failedBursts) + if (journal.failureAt > 0) ", last ${at(journal.failureAt)}" else "")
+                DetailRow(
+                    "Failed scan cycles",
+                    "%,d".format(journal.failedBursts) + if (journal.failureAt > 0) ", last ${at(journal.failureAt)}" else "",
+                )
                 journal.bluetoothFailure?.let {
                     Hairline(inset = 16.dp)
                     DetailRow("Bluetooth problem", it)
@@ -81,13 +94,17 @@ fun HealthScreen(
 }
 
 @Composable
-private fun CapabilityCard(capability: Capability, onRecover: (Recovery) -> Unit) {
-    val icon = when (capability.level) {
-        Level.OK -> Icons.Outlined.CheckCircle
-        Level.WARNING -> Icons.Outlined.WarningAmber
-        Level.BLOCKED -> Icons.Outlined.ErrorOutline
-        Level.OFF -> Icons.Outlined.PauseCircle
-    }
+private fun CapabilityCard(
+    capability: Capability,
+    onRecover: (Recovery) -> Unit,
+) {
+    val icon =
+        when (capability.level) {
+            Level.OK -> Icons.Outlined.CheckCircle
+            Level.WARNING -> Icons.Outlined.WarningAmber
+            Level.BLOCKED -> Icons.Outlined.ErrorOutline
+            Level.OFF -> Icons.Outlined.PauseCircle
+        }
     Banner(
         capability.headline,
         capability.detail,

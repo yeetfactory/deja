@@ -1,13 +1,29 @@
 package dev.rishikesh.deja.ui
 
 import android.app.UiModeManager
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.BrightnessAuto
+import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.MonitorHeart
+import androidx.compose.material.icons.outlined.NotificationsNone
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -30,27 +46,46 @@ private val ENCOUNTER_DAYS = listOf(1, 7, 30)
 
 private fun days(value: Int) = if (value == 1) "1 day" else "$value days"
 
-private fun themeIcon(mode: ThemeMode): ImageVector = when (mode) {
-    ThemeMode.SYSTEM -> Icons.Outlined.BrightnessAuto
-    ThemeMode.LIGHT -> Icons.Outlined.LightMode
-    ThemeMode.DARK -> Icons.Outlined.DarkMode
-}
+private fun themeIcon(mode: ThemeMode): ImageVector =
+    when (mode) {
+        ThemeMode.SYSTEM -> Icons.Outlined.BrightnessAuto
+        ThemeMode.LIGHT -> Icons.Outlined.LightMode
+        ThemeMode.DARK -> Icons.Outlined.DarkMode
+    }
 
 /** A section title with one line saying what the whole group is for. */
 @Composable
-private fun Section(title: String, about: String) {
-    SectionLabel(title, Modifier.padding(top = 24.dp))
-    Note(about, Modifier.padding(bottom = 10.dp))
+private fun Section(
+    title: String,
+    about: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier) {
+        SectionLabel(title, Modifier.padding(top = 24.dp))
+        Note(about, Modifier.padding(bottom = 10.dp))
+    }
 }
 
 @Composable
-private fun ActionRow(icon: ImageVector, title: String, detail: String, onClick: () -> Unit) {
+private fun ActionRow(
+    icon: ImageVector,
+    title: String,
+    detail: String,
+    onClick: () -> Unit,
+) {
     val palette = LocalPalette.current
     ListRow(icon = icon, tint = palette.ink, badge = palette.neutralSoft, title = title, subtitle = detail, onClick = onClick)
 }
 
 @Composable
-fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSettings, totals: Totals, onHealth: () -> Unit) {
+fun SettingsScreen(
+    repository: Repository,
+    store: SettingsStore,
+    settings: AppSettings,
+    totals: Totals,
+    onHealth: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var confirmClear by rememberSaveable { mutableStateOf(false) }
@@ -58,7 +93,7 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
     val retention = settings.retention
     val alerts = settings.alerts
 
-    LazyColumn(Modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
+    LazyColumn(modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
         item {
             Header("Settings", "Everything stays on this phone.")
             Group {
@@ -74,21 +109,32 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                     settings.theme,
                     ThemeMode::label,
                     icon = ::themeIcon,
-                ) { choice ->
-                    store.update { it.copy(theme = choice) }
-                    context.getSystemService(UiModeManager::class.java).setApplicationNightMode(choice.nightMode)
-                }
+                    onSelect = { choice ->
+                        store.update { it.copy(theme = choice) }
+                        context.getSystemService(UiModeManager::class.java).setApplicationNightMode(choice.nightMode)
+                    },
+                )
             }
 
             Section("What Déjà listens for", "Turning something off means Déjà can't notice it.")
             Group {
-                SwitchRow("Bluetooth devices", "Phones, earbuds, watches and trackers. Needed to spot anything following you.", settings.bluetoothEnabled) { on ->
-                    store.update { it.copy(bluetoothEnabled = on) }
-                }
+                SwitchRow(
+                    "Bluetooth devices",
+                    "Phones, earbuds, watches and trackers. Needed to spot anything following you.",
+                    settings.bluetoothEnabled,
+                    onChange = { on ->
+                        store.update { it.copy(bluetoothEnabled = on) }
+                    },
+                )
                 Hairline(inset = 16.dp)
-                SwitchRow("Wi-Fi networks", "Remembers networks near you, including hotspots that move.", settings.wifiEnabled) { on ->
-                    store.update { it.copy(wifiEnabled = on) }
-                }
+                SwitchRow(
+                    "Wi-Fi networks",
+                    "Remembers networks near you, including hotspots that move.",
+                    settings.wifiEnabled,
+                    onChange = { on ->
+                        store.update { it.copy(wifiEnabled = on) }
+                    },
+                )
                 Hairline(inset = 16.dp)
                 ChoiceRow(
                     "How often to listen",
@@ -96,7 +142,8 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                     Cadence.entries,
                     settings.cadence,
                     Cadence::label,
-                ) { choice -> store.update { it.copy(cadence = choice) } }
+                    onSelect = { choice -> store.update { it.copy(cadence = choice) } },
+                )
             }
             Note(
                 "Déjà slows down on its own in Battery Saver or below 15% battery. With the screen off, Android only lets it hear known brands and trackers.",
@@ -105,17 +152,32 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
 
             Section("When to notify you", "Everything is still saved in Activity. These only decide what reaches your notifications.")
             Group {
-                SwitchRow("Something may be following you", "A device heard at several separate places in a row. Best left on.", alerts.following) { on ->
-                    store.update { it.copy(alerts = it.alerts.copy(following = on)) }
-                }
+                SwitchRow(
+                    "Something may be following you",
+                    "A device heard at several separate places in a row. Best left on.",
+                    alerts.following,
+                    onChange = { on ->
+                        store.update { it.copy(alerts = it.alerts.copy(following = on)) }
+                    },
+                )
                 Hairline(inset = 16.dp)
-                SwitchRow("A watched device comes back", "Only devices you've tapped Watch on.", alerts.watched) { on ->
-                    store.update { it.copy(alerts = it.alerts.copy(watched = on)) }
-                }
+                SwitchRow(
+                    "A watched device comes back",
+                    "Only devices you've tapped Watch on.",
+                    alerts.watched,
+                    onChange = { on ->
+                        store.update { it.copy(alerts = it.alerts.copy(watched = on)) }
+                    },
+                )
                 Hairline(inset = 16.dp)
-                SwitchRow("A new tracker is nearby", "Every time one is first heard. Can be noisy in busy places.", alerts.newTracker) { on ->
-                    store.update { it.copy(alerts = it.alerts.copy(newTracker = on)) }
-                }
+                SwitchRow(
+                    "A new tracker is nearby",
+                    "Every time one is first heard. Can be noisy in busy places.",
+                    alerts.newTracker,
+                    onChange = { on ->
+                        store.update { it.copy(alerts = it.alerts.copy(newTracker = on)) }
+                    },
+                )
                 Hairline(inset = 16.dp)
                 ActionRow(Icons.Outlined.NotificationsNone, "Send a test alert", "Check that alerts can reach you") {
                     val result = Notifier(context).test(Probe(context, (context.applicationContext as DejaApp).settings))
@@ -123,7 +185,10 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                 }
             }
 
-            Section("What Déjà remembers", "Old data is forgotten on its own. Devices you've named, watched, ignored or marked as yours are never forgotten.")
+            Section(
+                "What Déjà remembers",
+                "Old data is forgotten on its own. Devices you've named, watched, ignored or marked as yours are never forgotten.",
+            )
             Group {
                 ChoiceRow(
                     "Keep where and when devices were seen",
@@ -131,13 +196,15 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                     HISTORY_DAYS,
                     retention.historyDays,
                     ::days,
-                ) { value -> store.update { it.copy(retention = it.retention.copy(historyDays = value)) } }
+                    onSelect = { value -> store.update { it.copy(retention = it.retention.copy(historyDays = value)) } },
+                )
                 Hairline(inset = 16.dp)
                 SwitchRow(
                     "Keep full history for those saved devices",
                     "Turn this off to keep only their name, and forget where they've been after the limit above.",
                     retention.keepSavedHistory,
-                ) { on -> store.update { it.copy(retention = it.retention.copy(keepSavedHistory = on)) } }
+                    onChange = { on -> store.update { it.copy(retention = it.retention.copy(keepSavedHistory = on)) } },
+                )
                 Hairline(inset = 16.dp)
                 ChoiceRow(
                     "Forget unnamed devices",
@@ -145,7 +212,8 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                     UNNAMED_DAYS,
                     retention.unnamedDays,
                     ::days,
-                ) { value -> store.update { it.copy(retention = it.retention.copy(unnamedDays = value)) } }
+                    onSelect = { value -> store.update { it.copy(retention = it.retention.copy(unnamedDays = value)) } },
+                )
                 Hairline(inset = 16.dp)
                 ChoiceRow(
                     "Forget private addresses",
@@ -153,7 +221,8 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                     ENCOUNTER_DAYS,
                     retention.encounterDays,
                     ::days,
-                ) { value -> store.update { it.copy(retention = it.retention.copy(encounterDays = value)) } }
+                    onSelect = { value -> store.update { it.copy(retention = it.retention.copy(encounterDays = value)) } },
+                )
             }
 
             Section("Your data", "What's stored on this phone right now.")
@@ -168,7 +237,11 @@ fun SettingsScreen(repository: Repository, store: SettingsStore, settings: AppSe
                     Metric("%,d".format(totals.events), "Events", Modifier.weight(2.1f))
                 }
                 Hairline(inset = 16.dp)
-                ActionRow(Icons.Outlined.CleaningServices, "Clean up now", "Apply the limits above straight away, and remove unused places") {
+                ActionRow(
+                    Icons.Outlined.CleaningServices,
+                    "Clean up now",
+                    "Apply the limits above straight away, and remove unused places",
+                ) {
                     scope.launch {
                         repository.prune(System.currentTimeMillis(), retention)
                         message = "Old history and unused places were cleaned up."

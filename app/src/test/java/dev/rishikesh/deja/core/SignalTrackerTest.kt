@@ -6,14 +6,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SignalTrackerTest {
-    private fun tracker(vararg readings: Pair<Long, Int>) = SignalTracker().apply {
-        readings.forEach { (second, rssi) -> add(second * 1000, rssi) }
-    }
+    private fun tracker(vararg readings: Pair<Long, Int>) =
+        SignalTracker().apply {
+            readings.forEach { (second, rssi) -> add(second * 1000, rssi) }
+        }
 
     /** One reading a second for each value in turn, ending at second [values].size - 1. */
-    private fun series(vararg values: Int) = SignalTracker().apply {
-        values.forEachIndexed { second, rssi -> add(second * 1000L, rssi) }
-    }
+    private fun series(vararg values: Int) =
+        SignalTracker().apply {
+            values.forEachIndexed { second, rssi -> add(second * 1000L, rssi) }
+        }
 
     @Test fun `nothing heard yet is unknown, not zero`() {
         val state = SignalTracker().state(1000)

@@ -4,10 +4,11 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 
-fun inMemoryDatabase(): DejaDatabase = Room
-    .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), DejaDatabase::class.java)
-    .allowMainThreadQueries()
-    .build()
+fun inMemoryDatabase(): DejaDatabase =
+    Room
+        .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), DejaDatabase::class.java)
+        .allowMainThreadQueries()
+        .build()
 
 fun observation(
     key: String,
@@ -28,4 +29,3 @@ fun observation(
     temporary = temporary,
     fingerprint = fingerprint,
 )
-

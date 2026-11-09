@@ -47,25 +47,34 @@ class ScanService : Service() {
     private var lastBurstEnded = 0L
 
     /** System changes end the wait at once, so recovery does not have to sit out a full pause. */
-    private val systemChanges = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val before = LiveState.system.value
-            val after = probe.read()
-            LiveState.setSystem(after)
-            if (intent.action == LocationManager.MODE_CHANGED_ACTION) source?.locationChanged()
+    private val systemChanges =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                val before = LiveState.system.value
+                val after = probe.read()
+                LiveState.setSystem(after)
+                if (intent.action == LocationManager.MODE_CHANGED_ACTION) source?.locationChanged()
 
-            val settings = app.settings.settings.value
-            val recovered = !ready(before, settings) && ready(after, settings)
-            val lookingAtIt = intent.action == Intent.ACTION_SCREEN_ON &&
-                SystemClock.elapsedRealtime() - lastBurstEnded > MIN_SCREEN_ON_GAP_MS
-            if (recovered || lookingAtIt) ScanWake.signal()
-            refreshNotification(after, settings)
+                val settings = app.settings.settings.value
+                val recovered = !ready(before, settings) && ready(after, settings)
+                val lookingAtIt =
+                    intent.action == Intent.ACTION_SCREEN_ON &&
+                        SystemClock.elapsedRealtime() - lastBurstEnded > MIN_SCREEN_ON_GAP_MS
+                if (recovered || lookingAtIt) ScanWake.signal()
+                refreshNotification(after, settings)
+            }
         }
-    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         if (running) return START_STICKY
         notifier.createChannels()
 
@@ -100,7 +109,11 @@ class ScanService : Service() {
         LiveState.setListening(active.simulated)
         scope.launch { listen(active) }
         // A changed setting should apply now, not after the current pause.
-        scope.launch { app.settings.settings.drop(1).collect { ScanWake.signal() } }
+        scope.launch {
+            app.settings.settings
+                .drop(1)
+                .collect { ScanWake.signal() }
+        }
         // Android drops a foreground notification posted before it's allowed, and never shows it
         // later. On first run that's the normal order, so post it again once it can be seen.
         scope.launch {
@@ -138,7 +151,10 @@ class ScanService : Service() {
         }
     }
 
-    private fun giveUp(reason: String, promoteFirst: Boolean): Int {
+    private fun giveUp(
+        reason: String,
+        promoteFirst: Boolean,
+    ): Int {
         if (promoteFirst) {
             // startForegroundService() insists on a foreground call, even just to stop again.
             runCatching {
@@ -152,17 +168,26 @@ class ScanService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun ready(system: SystemState, settings: AppSettings) =
-        Health.readiness(system, settings.bluetoothEnabled, settings.wifiEnabled)
+    private fun ready(
+        system: SystemState,
+        settings: AppSettings,
+    ) = Health.readiness(system, settings.bluetoothEnabled, settings.wifiEnabled)
 
-    private fun blockedText(system: SystemState, settings: AppSettings): String? = when {
-        ready(system, settings) -> null
-        !system.locationOn -> "Paused: Location is off"
-        settings.bluetoothEnabled && !system.bluetoothOn -> "Paused: Bluetooth is off"
-        else -> "Paused: nothing can scan right now"
-    }
+    private fun blockedText(
+        system: SystemState,
+        settings: AppSettings,
+    ): String? =
+        when {
+            ready(system, settings) -> null
+            !system.locationOn -> "Paused: Location is off"
+            settings.bluetoothEnabled && !system.bluetoothOn -> "Paused: Bluetooth is off"
+            else -> "Paused: nothing can scan right now"
+        }
 
-    private fun refreshNotification(system: SystemState, settings: AppSettings) {
+    private fun refreshNotification(
+        system: SystemState,
+        settings: AppSettings,
+    ) {
         val text = blockedText(system, settings) ?: LISTENING
         if (text == notificationText) return
         notificationText = text
@@ -232,14 +257,16 @@ class ScanService : Service() {
     ): Boolean {
         val store = app.settings
         val repository = app.repository
-        val burst = active.burst(
-            BurstRequest(
-                plan = plan,
-                bluetooth = settings.bluetoothEnabled && system.bluetoothOn &&
-                    system.bluetoothPermission == Permission.GRANTED,
-                wifi = settings.wifiEnabled && index % plan.wifiEvery == 0,
-            ),
-        )
+        val burst =
+            active.burst(
+                BurstRequest(
+                    plan = plan,
+                    bluetooth =
+                        settings.bluetoothEnabled && system.bluetoothOn &&
+                            system.bluetoothPermission == Permission.GRANTED,
+                    wifi = settings.wifiEnabled && index % plan.wifiEvery == 0,
+                ),
+            )
         val now = active.now()
         val wallClock = System.currentTimeMillis()
         val fix: GeoFix? = active.fix()
@@ -280,7 +307,12 @@ class ScanService : Service() {
         return failed
     }
 
-    private fun blip(device: Device, rssi: Int?, returning: Boolean, heardAt: Long) = Blip(
+    private fun blip(
+        device: Device,
+        rssi: Int?,
+        returning: Boolean,
+        heardAt: Long,
+    ) = Blip(
         deviceId = device.id,
         key = device.key,
         title = device.title,

@@ -89,8 +89,13 @@ data class Device(
     val saved: Boolean get() = label != null || starred || owned || ignored
 }
 
-fun deviceTitle(id: Long, label: String?, broadcastName: String?, descriptor: String?, vendor: String?): String =
-    label ?: broadcastName ?: descriptor ?: vendor ?: "Device %04d".format(id)
+fun deviceTitle(
+    id: Long,
+    label: String?,
+    broadcastName: String?,
+    descriptor: String?,
+    vendor: String?,
+): String = label ?: broadcastName ?: descriptor ?: vendor ?: "Device %04d".format(id)
 
 @Entity(tableName = "place")
 data class Place(

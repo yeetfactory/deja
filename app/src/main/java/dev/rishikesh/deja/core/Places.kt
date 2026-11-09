@@ -9,17 +9,29 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** A location reading. [accuracy] is the radius in metres the true position is likely inside. */
-data class GeoFix(val lat: Double, val lng: Double, val accuracy: Float, val name: String? = null)
+data class GeoFix(
+    val lat: Double,
+    val lng: Double,
+    val accuracy: Float,
+    val name: String? = null,
+)
 
 sealed interface Resolution {
     /** The fix belongs to this place. [updated] carries a refined centre when the fix was good. */
-    data class Known(val place: Place, val updated: Place?) : Resolution
+    data class Known(
+        val place: Place,
+        val updated: Place?,
+    ) : Resolution
 
     /** Two fixes agree on somewhere new, so it is worth creating. */
-    data class Create(val fix: GeoFix) : Resolution
+    data class Create(
+        val fix: GeoFix,
+    ) : Resolution
 
     /** Possibly somewhere new. Wait for a second fix, so passing through leaves no place behind. */
-    data class Candidate(val fix: GeoFix) : Resolution
+    data class Candidate(
+        val fix: GeoFix,
+    ) : Resolution
 
     /** Too vague to place at all. Better no place than a false one. */
     data object Unresolved : Resolution
@@ -53,17 +65,30 @@ object PlaceClusterer {
 
     private const val MAX_SAMPLES = 200
 
-    fun metersBetween(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+    fun metersBetween(
+        lat1: Double,
+        lng1: Double,
+        lat2: Double,
+        lng2: Double,
+    ): Double {
         val dLat = Math.toRadians(lat2 - lat1)
         val dLng = Math.toRadians(lng2 - lng1)
-        val a = sin(dLat / 2).pow(2) +
-            cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLng / 2).pow(2)
+        val a =
+            sin(dLat / 2).pow(2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLng / 2).pow(2)
         return 6_371_000 * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
-    fun metersBetween(a: Place, b: Place) = metersBetween(a.lat, a.lng, b.lat, b.lng)
+    fun metersBetween(
+        a: Place,
+        b: Place,
+    ) = metersBetween(a.lat, a.lng, b.lat, b.lng)
 
-    fun resolve(places: List<Place>, fix: GeoFix, candidate: GeoFix?): Resolution {
+    fun resolve(
+        places: List<Place>,
+        fix: GeoFix,
+        candidate: GeoFix?,
+    ): Resolution {
         if (fix.accuracy > MAX_USABLE_ACCURACY) return Resolution.Unresolved
 
         val nearest = places.minByOrNull { metersBetween(fix.lat, fix.lng, it.lat, it.lng) }
@@ -74,13 +99,17 @@ object PlaceClusterer {
         }
 
         if (fix.accuracy > MAX_FOUNDING_ACCURACY) return Resolution.Unresolved
-        val confirmed = candidate != null &&
-            metersBetween(fix.lat, fix.lng, candidate.lat, candidate.lng) <= CANDIDATE_RADIUS_METERS
+        val confirmed =
+            candidate != null &&
+                metersBetween(fix.lat, fix.lng, candidate.lat, candidate.lng) <= CANDIDATE_RADIUS_METERS
         return if (confirmed || fix.name != null) Resolution.Create(fix) else Resolution.Candidate(fix)
     }
 
     /** A running mean. The sample cap keeps a place able to follow a slow correction. */
-    private fun refine(place: Place, fix: GeoFix): Place? {
+    private fun refine(
+        place: Place,
+        fix: GeoFix,
+    ): Place? {
         if (fix.accuracy > MAX_REFINING_ACCURACY) return null
         val weight = place.samples.toDouble()
         return place.copy(
@@ -91,18 +120,23 @@ object PlaceClusterer {
     }
 
     /** Whether two places are really apart, rather than one place seen through location error. */
-    fun apart(a: Place?, b: Place?, accuracy: Float?): Boolean {
+    fun apart(
+        a: Place?,
+        b: Place?,
+        accuracy: Float?,
+    ): Boolean {
         if (a == null || b == null || a.id == b.id) return false
         val slack = min(accuracy?.toDouble() ?: 50.0, MAX_ACCURACY_BONUS_METERS)
         return metersBetween(a, b) > FollowEngine.MIN_SEPARATION_METERS + slack
     }
 
     /** Pairs of places close enough that they are probably one place, nearest first. */
-    fun duplicates(places: List<Place>): List<Pair<Place, Place>> = buildList {
-        for (i in places.indices) {
-            for (j in i + 1 until places.size) {
-                if (metersBetween(places[i], places[j]) <= DUPLICATE_METERS) add(places[i] to places[j])
+    fun duplicates(places: List<Place>): List<Pair<Place, Place>> =
+        buildList {
+            for (i in places.indices) {
+                for (j in i + 1 until places.size) {
+                    if (metersBetween(places[i], places[j]) <= DUPLICATE_METERS) add(places[i] to places[j])
+                }
             }
-        }
-    }.sortedBy { metersBetween(it.first, it.second) }
+        }.sortedBy { metersBetween(it.first, it.second) }
 }

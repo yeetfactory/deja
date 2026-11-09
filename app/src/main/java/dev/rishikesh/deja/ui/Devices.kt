@@ -2,7 +2,18 @@ package dev.rishikesh.deja.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -10,7 +21,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -18,8 +31,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +57,12 @@ import dev.rishikesh.deja.data.Repository
 private const val PAGE = 100
 
 @Composable
-fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) -> Unit) {
+fun DevicesScreen(
+    repository: Repository,
+    settings: AppSettings,
+    onOpen: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val palette = LocalPalette.current
     var filter by rememberSaveable { mutableStateOf(DeviceFilter.REMEMBERED) }
     var sort by rememberSaveable { mutableStateOf(DeviceSort.RECENT) }
@@ -54,7 +77,7 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
     }.collectAsStateWithLifecycle(0)
     val now = System.currentTimeMillis()
 
-    LazyColumn(Modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
+    LazyColumn(modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(horizontal = Gutter)) {
         item {
             Header("Devices", filter.explanation)
             TextField(
@@ -65,17 +88,18 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
                 placeholder = { Text("Search devices", style = Type.text) },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                 shape = RoundedCornerShape(14.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = palette.surface,
-                    unfocusedContainerColor = palette.surface,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = palette.surface,
+                        unfocusedContainerColor = palette.surface,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(6.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(DeviceFilter.entries) { option -> Pill(option.label, active = option == filter) { filter = option } }
+                items(DeviceFilter.entries) { option -> Pill(option.label, active = option == filter, onClick = { filter = option }) }
             }
             Row(
                 Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 4.dp),
@@ -91,8 +115,14 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
             }
         }
         when (val current = state) {
-            Async.Loading -> item { LoadingState() }
-            is Async.Failed -> item { ErrorState(current.message) }
+            Async.Loading -> {
+                item { LoadingState() }
+            }
+
+            is Async.Failed -> {
+                item { ErrorState(current.message) }
+            }
+
             is Async.Ready -> {
                 val shown = current.value
                 if (shown.isEmpty()) {
@@ -109,11 +139,12 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
                             .background(palette.surface),
                     ) {
                         if (index > 0) Hairline()
-                        val (tint, badge) = when {
-                            device.category == Category.TRACKER && !device.owned -> palette.alert to palette.alertSoft
-                            device.starred || device.owned -> palette.accent to palette.accentSoft
-                            else -> palette.ink to palette.neutralSoft
-                        }
+                        val (tint, badge) =
+                            when {
+                                device.category == Category.TRACKER && !device.owned -> palette.alert to palette.alertSoft
+                                device.starred || device.owned -> palette.accent to palette.accentSoft
+                                else -> palette.ink to palette.neutralSoft
+                            }
                         ListRow(
                             icon = device.category.icon,
                             tint = tint,
@@ -126,7 +157,7 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
                     }
                 }
                 item {
-                    LoadMore(shown.size, total) { limit += PAGE }
+                    LoadMore(shown.size, total, onMore = { limit += PAGE })
                     Spacer(Modifier.height(20.dp))
                 }
             }
@@ -136,7 +167,10 @@ fun DevicesScreen(repository: Repository, settings: AppSettings, onOpen: (Long) 
 
 /** Sorting is used far less than filtering, so it stays out of the way until it's wanted. */
 @Composable
-private fun SortMenu(sort: DeviceSort, onSort: (DeviceSort) -> Unit) {
+private fun SortMenu(
+    sort: DeviceSort,
+    onSort: (DeviceSort) -> Unit,
+) {
     val palette = LocalPalette.current
     var open by remember { mutableStateOf(false) }
     Box {
@@ -156,11 +190,19 @@ private fun SortMenu(sort: DeviceSort, onSort: (DeviceSort) -> Unit) {
             DeviceSort.entries.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option.label, style = Type.body, color = palette.ink) },
-                    trailingIcon = if (option == sort) {
-                        { Icon(Icons.Outlined.Check, contentDescription = "Selected", tint = palette.ink, modifier = Modifier.size(18.dp)) }
-                    } else {
-                        null
-                    },
+                    trailingIcon =
+                        if (option == sort) {
+                            {
+                                Icon(
+                                    Icons.Outlined.Check,
+                                    contentDescription = "Selected",
+                                    tint = palette.ink,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        } else {
+                            null
+                        },
                     onClick = {
                         open = false
                         onSort(option)
@@ -171,18 +213,35 @@ private fun SortMenu(sort: DeviceSort, onSort: (DeviceSort) -> Unit) {
     }
 }
 
-private fun deviceNote(device: Device, settings: AppSettings, now: Long): String {
+private fun deviceNote(
+    device: Device,
+    settings: AppSettings,
+    now: Long,
+): String {
     val days = if (device.temporary) settings.retention.encounterDays else settings.retention.unnamedDays
-    val state = when {
-        device.owned -> "Mine"
-        device.ignored -> "Ignored"
-        device.starred -> "Watching"
-        device.label != null -> "Saved"
-        else -> {
-            val left = ((device.lastSeen + days * MatchEngine.DAY - now) / MatchEngine.DAY).coerceAtLeast(0)
-            "Forgets in $left ${if (left == 1L) "day" else "days"}"
+    val state =
+        when {
+            device.owned -> {
+                "Mine"
+            }
+
+            device.ignored -> {
+                "Ignored"
+            }
+
+            device.starred -> {
+                "Watching"
+            }
+
+            device.label != null -> {
+                "Saved"
+            }
+
+            else -> {
+                val left = ((device.lastSeen + days * MatchEngine.DAY - now) / MatchEngine.DAY).coerceAtLeast(0)
+                "Forgets in $left ${if (left == 1L) "day" else "days"}"
+            }
         }
-    }
     val type = if (device.title == device.descriptor) device.category.label else device.descriptor ?: device.category.label
     return "$type · $state"
 }

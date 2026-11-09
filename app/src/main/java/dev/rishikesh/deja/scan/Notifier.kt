@@ -14,7 +14,9 @@ import dev.rishikesh.deja.data.Delivery
 import dev.rishikesh.deja.data.EventType
 
 /** Everything Déjà says through the notification shade. */
-class Notifier(private val context: Context) {
+class Notifier(
+    private val context: Context,
+) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     fun createChannels() {
@@ -28,10 +30,14 @@ class Notifier(private val context: Context) {
         )
     }
 
-    private fun open(requestCode: Int, configure: Intent.() -> Unit = {}): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            .apply(configure)
+    private fun open(
+        requestCode: Int,
+        configure: Intent.() -> Unit = {},
+    ): PendingIntent {
+        val intent =
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .apply(configure)
         return PendingIntent.getActivity(
             context,
             requestCode,
@@ -40,7 +46,11 @@ class Notifier(private val context: Context) {
         )
     }
 
-    private fun broadcast(requestCode: Int, action: String, configure: Intent.() -> Unit = {}): PendingIntent =
+    private fun broadcast(
+        requestCode: Int,
+        action: String,
+        configure: Intent.() -> Unit = {},
+    ): PendingIntent =
         PendingIntent.getBroadcast(
             context,
             requestCode,
@@ -48,11 +58,14 @@ class Notifier(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-    private fun action(text: String, intent: PendingIntent) =
-        Notification.Action.Builder(null, text, intent).build()
+    private fun action(
+        text: String,
+        intent: PendingIntent,
+    ) = Notification.Action.Builder(null, text, intent).build()
 
     fun service(text: String): Notification =
-        Notification.Builder(context, CHANNEL_SERVICE)
+        Notification
+            .Builder(context, CHANNEL_SERVICE)
             .setSmallIcon(R.drawable.ic_stat_deja)
             .setContentTitle(text)
             .setContentIntent(open(0))
@@ -68,7 +81,8 @@ class Notifier(private val context: Context) {
         createChannels()
         manager.notify(
             ID_STATUS,
-            Notification.Builder(context, CHANNEL_STATUS)
+            Notification
+                .Builder(context, CHANNEL_STATUS)
                 .setSmallIcon(R.drawable.ic_stat_deja)
                 .setContentTitle("Scanning is paused")
                 .setContentText("Déjà is not listening until you resume.")
@@ -85,7 +99,8 @@ class Notifier(private val context: Context) {
         createChannels()
         manager.notify(
             ID_STATUS,
-            Notification.Builder(context, CHANNEL_STATUS)
+            Notification
+                .Builder(context, CHANNEL_STATUS)
                 .setSmallIcon(R.drawable.ic_stat_deja)
                 .setContentTitle("Scanning has stopped")
                 .setContentText(reason)
@@ -107,17 +122,22 @@ class Notifier(private val context: Context) {
     }
 
     /** Posts the alert if it can reach the user, and reports what actually happened. */
-    fun alert(alert: Alert, probe: Probe): Delivery {
+    fun alert(
+        alert: Alert,
+        probe: Probe,
+    ): Delivery {
         deliverable(probe)?.let { return it }
         val name = alert.device.title
-        val title = when (alert.type) {
-            EventType.FOLLOWING -> "$name may be following you"
-            EventType.NEW_TRACKER, EventType.NEW_FIND_MY -> "New tracker nearby: $name"
-            EventType.RETURNED -> "$name is back"
-        }
+        val title =
+            when (alert.type) {
+                EventType.FOLLOWING -> "$name may be following you"
+                EventType.NEW_TRACKER, EventType.NEW_FIND_MY -> "New tracker nearby: $name"
+                EventType.RETURNED -> "$name is back"
+            }
         val route = listOfNotNull(alert.fromPlace, alert.toPlace).distinct().joinToString(" → ")
         val text = alert.summary.ifEmpty { route.ifEmpty { "Seen again nearby" } }
         val id = ID_ALERT_BASE + alert.eventId.toInt()
+
         fun extras(intent: Intent) {
             intent.putExtra(DejaReceiver.EXTRA_EVENT, alert.eventId)
             intent.putExtra(DejaReceiver.EXTRA_DEVICE, alert.device.id)
@@ -126,7 +146,8 @@ class Notifier(private val context: Context) {
         val base = id * 4
         manager.notify(
             id,
-            Notification.Builder(context, CHANNEL_ALERTS)
+            Notification
+                .Builder(context, CHANNEL_ALERTS)
                 .setSmallIcon(R.drawable.ic_stat_deja)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -147,7 +168,8 @@ class Notifier(private val context: Context) {
         deliverable(probe)?.let { return it }
         manager.notify(
             ID_TEST,
-            Notification.Builder(context, CHANNEL_ALERTS)
+            Notification
+                .Builder(context, CHANNEL_ALERTS)
                 .setSmallIcon(R.drawable.ic_stat_deja)
                 .setContentTitle("Test alert")
                 .setContentText("Alerts from Déjà will look like this.")

@@ -5,12 +5,23 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /** A sighting reduced to the two facts that history views need. */
-data class HistoryPoint(val time: Long, val placeId: Long?)
+data class HistoryPoint(
+    val time: Long,
+    val placeId: Long?,
+)
 
 /** One continuous stay near a device: sightings at one place with no long gap between them. */
-data class Visit(val placeId: Long?, val start: Long, val end: Long, val sightings: Int)
+data class Visit(
+    val placeId: Long?,
+    val start: Long,
+    val end: Long,
+    val sightings: Int,
+)
 
-data class DayRow(val date: LocalDate, val hours: IntArray) {
+data class DayRow(
+    val date: LocalDate,
+    val hours: IntArray,
+) {
     val total: Int get() = hours.sum()
 }
 
@@ -38,7 +49,11 @@ object History {
     }
 
     /** Oldest day first. Every day is present, even an empty one, so gaps read as gaps. */
-    fun week(times: List<Long>, now: Long, zone: ZoneId): List<DayRow> {
+    fun week(
+        times: List<Long>,
+        now: Long,
+        zone: ZoneId,
+    ): List<DayRow> {
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         val rows = (DAYS - 1 downTo 0).map { DayRow(today.minusDays(it.toLong()), IntArray(24)) }
         val byDate = rows.associateBy { it.date }

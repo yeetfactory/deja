@@ -1,6 +1,9 @@
 package dev.rishikesh.deja.core
 
-enum class Cadence(val label: String, val detail: String) {
+enum class Cadence(
+    val label: String,
+    val detail: String,
+) {
     SAVER("Battery saver", "Fewer, gentler scans. Brief encounters are more likely to be missed."),
     BALANCED("Balanced", "Scans about once a minute with the screen on, less often with it off."),
     FREQUENT("Frequent", "Scans more often and uses more battery."),
@@ -37,30 +40,37 @@ object ScanPolicy {
     /** How long to wait while nothing can scan. A system change wakes the loop sooner. */
     const val IDLE_PAUSE_MS = 2 * 60 * SECOND
 
-    fun plan(cadence: Cadence, conditions: Conditions): ScanPlan {
-        val constrained = conditions.powerSave ||
-            (!conditions.charging && conditions.batteryPercent in 0..LOW_BATTERY_PERCENT)
+    fun plan(
+        cadence: Cadence,
+        conditions: Conditions,
+    ): ScanPlan {
+        val constrained =
+            conditions.powerSave ||
+                (!conditions.charging && conditions.batteryPercent in 0..LOW_BATTERY_PERCENT)
         val filtered = !conditions.screenOn
 
         if (constrained) {
             return ScanPlan(8 * SECOND, 180 * SECOND, BleMode.LOW_POWER, filtered, wifiEvery = 3, note = "Reduced to save battery")
         }
 
-        val scale = when (cadence) {
-            Cadence.SAVER -> 2.0
-            Cadence.BALANCED -> 1.0
-            Cadence.FREQUENT -> 0.5
-        }
-        val base = when {
-            conditions.screenOn -> 45
-            conditions.charging -> 60
-            else -> 90
-        }
-        val mode = when {
-            cadence == Cadence.SAVER -> BleMode.LOW_POWER
-            conditions.screenOn -> BleMode.LOW_LATENCY
-            else -> BleMode.BALANCED
-        }
+        val scale =
+            when (cadence) {
+                Cadence.SAVER -> 2.0
+                Cadence.BALANCED -> 1.0
+                Cadence.FREQUENT -> 0.5
+            }
+        val base =
+            when {
+                conditions.screenOn -> 45
+                conditions.charging -> 60
+                else -> 90
+            }
+        val mode =
+            when {
+                cadence == Cadence.SAVER -> BleMode.LOW_POWER
+                conditions.screenOn -> BleMode.LOW_LATENCY
+                else -> BleMode.BALANCED
+            }
         return ScanPlan(
             burstMs = (if (conditions.screenOn) 10 else 8) * SECOND,
             pauseMs = (base * scale).toLong() * SECOND,
@@ -72,7 +82,10 @@ object ScanPolicy {
     }
 
     /** Doubles with each consecutive failure, so a broken radio is not hammered. */
-    fun backoff(pauseMs: Long, failures: Int): Long {
+    fun backoff(
+        pauseMs: Long,
+        failures: Int,
+    ): Long {
         if (failures <= 0) return pauseMs
         return minOf(pauseMs shl minOf(failures, 6), MAX_BACKOFF_MS).coerceAtLeast(pauseMs)
     }

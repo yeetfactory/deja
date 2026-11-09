@@ -15,7 +15,11 @@ class FollowEngineTest {
     private val cafe = Triple(2L, 52.5300, 13.4200)
     private val gym = Triple(3L, 52.5100, 13.3900)
 
-    private fun at(place: Triple<Long, Double, Double>, minute: Int, accuracy: Float? = 20f) = TrailPoint(
+    private fun at(
+        place: Triple<Long, Double, Double>,
+        minute: Int,
+        accuracy: Float? = 20f,
+    ) = TrailPoint(
         time = minute * MINUTE,
         placeId = place.first,
         placeName = "Place ${place.first}",
@@ -32,8 +36,16 @@ class FollowEngineTest {
         ignored: Boolean = false,
         identity: IdentityConfidence = IdentityConfidence.STABLE,
     ) = Device(
-        key = "ble:x", radio = Radio.BLE, broadcastName = null, category = Category.TRACKER,
-        firstSeen = 0, lastSeen = 0, lastRssi = -60, owned = owned, ignored = ignored, identity = identity,
+        key = "ble:x",
+        radio = Radio.BLE,
+        broadcastName = null,
+        category = Category.TRACKER,
+        firstSeen = 0,
+        lastSeen = 0,
+        lastRssi = -60,
+        owned = owned,
+        ignored = ignored,
+        identity = identity,
     )
 
     @Test fun `repeated readings across three separate places over time is following`() {

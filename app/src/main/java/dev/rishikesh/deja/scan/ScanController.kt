@@ -32,7 +32,10 @@ object ScanController {
         }
     }
 
-    private fun reportStartFailure(context: Context, e: Exception) {
+    private fun reportStartFailure(
+        context: Context,
+        e: Exception,
+    ) {
         Log.w(TAG, "Could not start scanning", e)
         val reason = "Android would not let scanning start in the background"
         app(context).settings.journal { it.copy(serviceError = reason) }
@@ -45,7 +48,10 @@ object ScanController {
         ensureRunning(context)
     }
 
-    fun pause(context: Context, showResume: Boolean = true) {
+    fun pause(
+        context: Context,
+        showResume: Boolean = true,
+    ) {
         app(context).settings.update { it.copy(scanningEnabled = false) }
         context.stopService(Intent(context, ScanService::class.java))
         if (showResume) Notifier(context).paused()

@@ -17,7 +17,10 @@ data class Advert(
 )
 
 /** One type-length-value frame inside Apple manufacturer data. */
-class AppleFrame(val type: Int, val payload: ByteArray)
+class AppleFrame(
+    val type: Int,
+    val payload: ByteArray,
+)
 
 data class Classification(
     val category: Category,
@@ -67,59 +70,67 @@ object BleClassifier {
     const val MODEL_UNKNOWN = "Model unknown"
     const val FIND_MY_UNKNOWN = "Apple Find My broadcast · $MODEL_UNKNOWN"
 
-    private val VENDORS = mapOf(
-        APPLE to "Apple",
-        0x0006 to "Microsoft",
-        0x00E0 to "Google",
-        0x0075 to "Samsung",
-        0x0087 to "Garmin",
-        0x009E to "Bose",
-        0x012D to "Sony",
-        0x0171 to "Amazon",
-        0x038F to "Xiaomi",
-    )
+    private val VENDORS =
+        mapOf(
+            APPLE to "Apple",
+            0x0006 to "Microsoft",
+            0x00E0 to "Google",
+            0x0075 to "Samsung",
+            0x0087 to "Garmin",
+            0x009E to "Bose",
+            0x012D to "Sony",
+            0x0171 to "Amazon",
+            0x038F to "Xiaomi",
+        )
 
     /** The two model bytes of a Proximity Pairing frame, in the order they arrive. */
-    private val AUDIO_MODELS = mapOf(
-        0x0220 to "AirPods",
-        0x0F20 to "AirPods (2nd generation)",
-        0x1320 to "AirPods (3rd generation)",
-        0x0E20 to "AirPods Pro",
-        0x1420 to "AirPods Pro (2nd generation)",
-        0x0A20 to "AirPods Max",
-        0x0320 to "Powerbeats",
-        0x0B20 to "Powerbeats Pro",
-        0x0520 to "BeatsX",
-        0x0620 to "Beats Solo3",
-        0x0920 to "Beats Studio3",
-        0x0C20 to "Beats Solo Pro",
-        0x1020 to "Beats Flex",
-        0x1120 to "Beats Studio Buds",
-        0x1220 to "Beats Fit Pro",
-        0x1620 to "Beats Studio Buds+",
-        0x1720 to "Beats Studio Pro",
-    )
+    private val AUDIO_MODELS =
+        mapOf(
+            0x0220 to "AirPods",
+            0x0F20 to "AirPods (2nd generation)",
+            0x1320 to "AirPods (3rd generation)",
+            0x0E20 to "AirPods Pro",
+            0x1420 to "AirPods Pro (2nd generation)",
+            0x0A20 to "AirPods Max",
+            0x0320 to "Powerbeats",
+            0x0B20 to "Powerbeats Pro",
+            0x0520 to "BeatsX",
+            0x0620 to "Beats Solo3",
+            0x0920 to "Beats Studio3",
+            0x0C20 to "Beats Solo Pro",
+            0x1020 to "Beats Flex",
+            0x1120 to "Beats Studio Buds",
+            0x1220 to "Beats Fit Pro",
+            0x1620 to "Beats Studio Buds+",
+            0x1720 to "Beats Studio Pro",
+        )
 
-    private class NameRule(val category: Category, pattern: String) {
+    private class NameRule(
+        val category: Category,
+        pattern: String,
+    ) {
         val regex = Regex(pattern)
     }
 
     /** Whole words only, so "Oxford" is not a Ford and "Husband's phone" is not a fitness band. */
-    private val NAME_RULES = listOf(
-        NameRule(Category.TRACKER, """\b(tile|smart ?tag\d?|airtag|chipolo|pebblebee)\b"""),
-        NameRule(Category.AUDIO, """\b(airpods|buds\d?|bose|jabra|beats|headphones?|headset|earbuds|speaker|soundbar|jbl|wh-\w+|wf-\w+)\b"""),
-        NameRule(Category.WEARABLE, """\b(watch|band|fitbit|garmin|whoop|oura|polar)\b"""),
-        NameRule(Category.COMPUTER, """\b(macbook|imac|mac ?mini|mac ?studio|mac ?pro|laptop|thinkpad|desktop)\b"""),
-        NameRule(Category.TABLET, """\b(ipad|galaxy tab|tablet)\b"""),
-        NameRule(Category.PHONE, """\b(iphone|phone|galaxy s\d+|pixel \d+\w*)\b"""),
-        NameRule(Category.INPUT, """\b(keyboard|mouse|trackpad|mx master)\b"""),
-        NameRule(Category.VEHICLE, """\b(tesla|bmw|audi|vw|mercedes|toyota|ford|my car|carplay)\b"""),
-        NameRule(Category.TV, """\b(tv|bravia|roku|chromecast|fire stick)\b"""),
-    )
+    private val NAME_RULES =
+        listOf(
+            NameRule(Category.TRACKER, """\b(tile|smart ?tag\d?|airtag|chipolo|pebblebee)\b"""),
+            NameRule(
+                Category.AUDIO,
+                """\b(airpods|buds\d?|bose|jabra|beats|headphones?|headset|earbuds|speaker|soundbar|jbl|wh-\w+|wf-\w+)\b""",
+            ),
+            NameRule(Category.WEARABLE, """\b(watch|band|fitbit|garmin|whoop|oura|polar)\b"""),
+            NameRule(Category.COMPUTER, """\b(macbook|imac|mac ?mini|mac ?studio|mac ?pro|laptop|thinkpad|desktop)\b"""),
+            NameRule(Category.TABLET, """\b(ipad|galaxy tab|tablet)\b"""),
+            NameRule(Category.PHONE, """\b(iphone|phone|galaxy s\d+|pixel \d+\w*)\b"""),
+            NameRule(Category.INPUT, """\b(keyboard|mouse|trackpad|mx master)\b"""),
+            NameRule(Category.VEHICLE, """\b(tesla|bmw|audi|vw|mercedes|toyota|ford|my car|carplay)\b"""),
+            NameRule(Category.TV, """\b(tv|bravia|roku|chromecast|fire stick)\b"""),
+        )
 
     /** A readable fallback from the Bluetooth company ID, such as "Apple device". */
-    fun vendor(manufacturer: Map<Int, ByteArray>): String? =
-        manufacturer.keys.firstNotNullOfOrNull { VENDORS[it] }?.let { "$it device" }
+    fun vendor(manufacturer: Map<Int, ByteArray>): String? = manufacturer.keys.firstNotNullOfOrNull { VENDORS[it] }?.let { "$it device" }
 
     /** Walks the frames in order, and keeps whatever survives if the data is cut short. */
     fun appleTlvs(manufacturer: Map<Int, ByteArray>): List<AppleFrame> {
@@ -148,11 +159,9 @@ object BleClassifier {
     /** The long form of the frame, used when the accessory has been away from its owner. */
     private fun AppleFrame.separated() = payload.size >= FIND_MY_SEPARATED_LENGTH
 
-    fun isFindMySeparated(manufacturer: Map<Int, ByteArray>): Boolean =
-        findMy(appleTlvs(manufacturer))?.separated() == true
+    fun isFindMySeparated(manufacturer: Map<Int, ByteArray>): Boolean = findMy(appleTlvs(manufacturer))?.separated() == true
 
-    private fun isFindMyNearOwner(manufacturer: Map<Int, ByteArray>): Boolean =
-        findMy(appleTlvs(manufacturer))?.separated() == false
+    private fun isFindMyNearOwner(manufacturer: Map<Int, ByteArray>): Boolean = findMy(appleTlvs(manufacturer))?.separated() == false
 
     /** True when this address will change soon, so it says nothing beyond this encounter. */
     fun isRotating(
@@ -170,7 +179,10 @@ object BleClassifier {
         }
     }
 
-    private fun addressType(address: String, kind: AddressKind): String {
+    private fun addressType(
+        address: String,
+        kind: AddressKind,
+    ): String {
         val topBits = address.take(2).toIntOrNull(16)?.shr(6)
         return when {
             kind == AddressKind.PUBLIC -> "Public"
@@ -191,7 +203,10 @@ object BleClassifier {
     )
 
     private fun fromTrackerService(advert: Advert): Finding? {
-        fun tracker(brand: String, id: Int) = Finding(
+        fun tracker(
+            brand: String,
+            id: Int,
+        ) = Finding(
             Category.TRACKER,
             "$brand tracker · $MODEL_UNKNOWN",
             TypeConfidence.HIGH,
@@ -249,10 +264,36 @@ object BleClassifier {
         val because = if (frame.separated()) "Find My frame, long form: away from its owner" else "Find My frame, short form"
         val hint = if (frame.separated()) (frame.payload[0].toInt() and 0x30) shr 4 else 0
         return when (hint) {
-            1 -> Finding(Category.FIND_MY, "Apple Find My broadcast · Possible AirTag", TypeConfidence.LOW, "$because; unconfirmed status bits hint at AirTag")
-            2 -> Finding(Category.FIND_MY, "Apple Find My broadcast · Possible accessory", TypeConfidence.LOW, "$because; unconfirmed status bits hint at a third-party accessory")
-            3 -> Finding(Category.AUDIO, "Possibly AirPods · $MODEL_UNKNOWN", TypeConfidence.LOW, "$because; unconfirmed status bits hint at AirPods")
-            else -> Finding(Category.FIND_MY, FIND_MY_UNKNOWN, TypeConfidence.LOW, because)
+            1 -> {
+                Finding(
+                    Category.FIND_MY,
+                    "Apple Find My broadcast · Possible AirTag",
+                    TypeConfidence.LOW,
+                    "$because; unconfirmed status bits hint at AirTag",
+                )
+            }
+
+            2 -> {
+                Finding(
+                    Category.FIND_MY,
+                    "Apple Find My broadcast · Possible accessory",
+                    TypeConfidence.LOW,
+                    "$because; unconfirmed status bits hint at a third-party accessory",
+                )
+            }
+
+            3 -> {
+                Finding(
+                    Category.AUDIO,
+                    "Possibly AirPods · $MODEL_UNKNOWN",
+                    TypeConfidence.LOW,
+                    "$because; unconfirmed status bits hint at AirPods",
+                )
+            }
+
+            else -> {
+                Finding(Category.FIND_MY, FIND_MY_UNKNOWN, TypeConfidence.LOW, because)
+            }
         }
     }
 
@@ -271,35 +312,47 @@ object BleClassifier {
     private fun fromAppleHints(frames: List<AppleFrame>): Finding? {
         val types = frames.map { it.type }
         return when {
-            FRAME_MAGIC_SWITCH in types -> Finding(
-                Category.WEARABLE,
-                "Possible Apple Watch · $MODEL_UNKNOWN",
-                TypeConfidence.LOW,
-                "Apple Magic Switch frame",
-            )
-            FRAME_AIRPLAY_TARGET in types -> Finding(
-                Category.UNKNOWN,
-                "AirPlay receiver · $MODEL_UNKNOWN",
-                TypeConfidence.LOW,
-                "Apple AirPlay Target frame",
-            )
-            FRAME_HANDOFF in types || FRAME_NEARBY_INFO in types -> Finding(
-                Category.UNKNOWN,
-                "Apple device · $MODEL_UNKNOWN",
-                TypeConfidence.LOW,
-                "Apple Handoff or Nearby Info frame, sent by many Apple products",
-            )
-            else -> null
+            FRAME_MAGIC_SWITCH in types -> {
+                Finding(
+                    Category.WEARABLE,
+                    "Possible Apple Watch · $MODEL_UNKNOWN",
+                    TypeConfidence.LOW,
+                    "Apple Magic Switch frame",
+                )
+            }
+
+            FRAME_AIRPLAY_TARGET in types -> {
+                Finding(
+                    Category.UNKNOWN,
+                    "AirPlay receiver · $MODEL_UNKNOWN",
+                    TypeConfidence.LOW,
+                    "Apple AirPlay Target frame",
+                )
+            }
+
+            FRAME_HANDOFF in types || FRAME_NEARBY_INFO in types -> {
+                Finding(
+                    Category.UNKNOWN,
+                    "Apple device · $MODEL_UNKNOWN",
+                    TypeConfidence.LOW,
+                    "Apple Handoff or Nearby Info frame, sent by many Apple products",
+                )
+            }
+
+            else -> {
+                null
+            }
         }
     }
 
-    private fun fromServices(services: Set<Int>): Finding? = when {
-        AUDIO_STREAM in services -> Finding(Category.AUDIO, null, TypeConfidence.MEDIUM, "Advertises Audio Stream Control 0x184E")
-        HEART_RATE in services -> Finding(Category.WEARABLE, null, TypeConfidence.MEDIUM, "Advertises Heart Rate 0x180D")
-        HID in services -> Finding(Category.INPUT, null, TypeConfidence.MEDIUM, "Advertises Human Interface Device 0x1812")
-        EDDYSTONE in services -> Finding(Category.BEACON, null, TypeConfidence.LOW, "Advertises Eddystone 0xFEAA")
-        else -> null
-    }
+    private fun fromServices(services: Set<Int>): Finding? =
+        when {
+            AUDIO_STREAM in services -> Finding(Category.AUDIO, null, TypeConfidence.MEDIUM, "Advertises Audio Stream Control 0x184E")
+            HEART_RATE in services -> Finding(Category.WEARABLE, null, TypeConfidence.MEDIUM, "Advertises Heart Rate 0x180D")
+            HID in services -> Finding(Category.INPUT, null, TypeConfidence.MEDIUM, "Advertises Human Interface Device 0x1812")
+            EDDYSTONE in services -> Finding(Category.BEACON, null, TypeConfidence.LOW, "Advertises Eddystone 0xFEAA")
+            else -> null
+        }
 
     fun classify(advert: Advert): Classification {
         val frames = appleTlvs(advert.manufacturer)
@@ -307,37 +360,41 @@ object BleClassifier {
 
         val named = fromName(advert.name)
         val pairing = fromProximityPairing(frames)
-        val found = fromTrackerService(advert)
-            ?: pairing
-            ?: named
-            ?: fromFindMy(frames)
-            ?: fromFindHub(advert)
-            ?: fromServices(advert.services)
-            ?: fromAppleHints(frames)
+        val found =
+            fromTrackerService(advert)
+                ?: pairing
+                ?: named
+                ?: fromFindMy(frames)
+                ?: fromFindHub(advert)
+                ?: fromServices(advert.services)
+                ?: fromAppleHints(frames)
 
         // Two independent claims agreeing is the only way a claim becomes strong.
         val agreed = pairing != null && named != null && named.category == pairing.category
-        val confidence = when {
-            agreed -> TypeConfidence.HIGH
-            found != null -> found.confidence
-            vendor != null -> TypeConfidence.LOW
-            else -> TypeConfidence.NONE
-        }
+        val confidence =
+            when {
+                agreed -> TypeConfidence.HIGH
+                found != null -> found.confidence
+                vendor != null -> TypeConfidence.LOW
+                else -> TypeConfidence.NONE
+            }
 
-        val evidence = buildList {
-            found?.let { add(it.because) }
-            if (agreed) named?.let { add(it.because) }
-            if (vendor != null) add("Manufacturer data from ${vendor.removeSuffix(" device")}")
-            if (found == null && vendor == null) add("Nothing in the advertisement identifies the device type")
-        }
+        val evidence =
+            buildList {
+                found?.let { add(it.because) }
+                if (agreed) add(named.because)
+                if (vendor != null) add("Manufacturer data from ${vendor.removeSuffix(" device")}")
+                if (found == null && vendor == null) add("Nothing in the advertisement identifies the device type")
+            }
 
         val rotating = isRotating(advert.address, advert.kind, advert.manufacturer)
         val findMySeparated = isFindMySeparated(advert.manufacturer)
-        val identity = when {
-            rotating -> IdentityConfidence.ADDRESS_ONLY
-            findMySeparated -> IdentityConfidence.MAY_CHANGE
-            else -> IdentityConfidence.STABLE
-        }
+        val identity =
+            when {
+                rotating -> IdentityConfidence.ADDRESS_ONLY
+                findMySeparated -> IdentityConfidence.MAY_CHANGE
+                else -> IdentityConfidence.STABLE
+            }
 
         return Classification(
             category = found?.category ?: Category.UNKNOWN,
@@ -353,7 +410,10 @@ object BleClassifier {
     }
 
     /** Wi-Fi access points. A locally administered BSSID may be randomised, or a hotspot's. */
-    fun classifyWifi(bssid: String, ssid: String?): Classification {
+    fun classifyWifi(
+        bssid: String,
+        ssid: String?,
+    ): Classification {
         val local = bssid.take(2).toIntOrNull(16)?.let { it and 0x02 != 0 } ?: true
         return Classification(
             category = Category.NETWORK,
@@ -363,20 +423,30 @@ object BleClassifier {
             identity = if (local) IdentityConfidence.MAY_CHANGE else IdentityConfidence.STABLE,
             temporary = false,
             addressType = if (local) "Locally administered BSSID" else "Manufacturer-assigned BSSID",
-            evidence = listOf(
-                "Found by a Wi-Fi scan",
-                if (ssid == null) "The network hides its name" else "Network name \"$ssid\"",
-            ),
+            evidence =
+                listOf(
+                    "Found by a Wi-Fi scan",
+                    if (ssid == null) "The network hides its name" else "Network name \"$ssid\"",
+                ),
             fingerprint = "wifi;hidden=${ssid == null};local=$local",
         )
     }
 
     /** Describes the shape of the advertisement. Holds no address, and is never used for matching. */
-    private fun fingerprint(advert: Advert, frames: List<AppleFrame>, vendor: String?): String = buildList {
-        add("vendor=${vendor?.removeSuffix(" device") ?: advert.manufacturer.keys.sorted().joinToString("+") { "%04X".format(it) }}")
-        if (frames.isNotEmpty()) add("frames=" + frames.joinToString(",") { "%02X".format(it.type) })
-        val ids = (advert.services + advert.serviceData.keys).sorted()
-        if (ids.isNotEmpty()) add("services=" + ids.joinToString(",") { "%04X".format(it) })
-        add("named=${!advert.name.isNullOrBlank()}")
-    }.joinToString(";")
+    private fun fingerprint(
+        advert: Advert,
+        frames: List<AppleFrame>,
+        vendor: String?,
+    ): String =
+        buildList {
+            add(
+                "vendor=${vendor?.removeSuffix(" device") ?: advert.manufacturer.keys
+                    .sorted()
+                    .joinToString("+") { "%04X".format(it) }}",
+            )
+            if (frames.isNotEmpty()) add("frames=" + frames.joinToString(",") { "%02X".format(it.type) })
+            val ids = (advert.services + advert.serviceData.keys).sorted()
+            if (ids.isNotEmpty()) add("services=" + ids.joinToString(",") { "%04X".format(it) })
+            add("named=${!advert.name.isNullOrBlank()}")
+        }.joinToString(";")
 }

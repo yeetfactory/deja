@@ -2,7 +2,10 @@ package dev.rishikesh.deja.core
 
 enum class Trend { STRONGER, WEAKER, STEADY, UNKNOWN }
 
-data class SignalReading(val time: Long, val rssi: Int)
+data class SignalReading(
+    val time: Long,
+    val rssi: Int,
+)
 
 data class SignalState(
     /** The smoothed strength, or null until something has been heard. */
@@ -20,7 +23,10 @@ data class SignalState(
 class SignalTracker {
     private val readings = ArrayDeque<SignalReading>()
 
-    fun add(time: Long, rssi: Int) {
+    fun add(
+        time: Long,
+        rssi: Int,
+    ) {
         readings.addLast(SignalReading(time, rssi))
         while (readings.isNotEmpty() && time - readings.first().time > HISTORY_MS) readings.removeFirst()
     }
@@ -32,12 +38,13 @@ class SignalTracker {
         val recent = readings.filter { now - it.time <= RECENT_MS }.map { it.rssi }
         val earlier = readings.filter { now - it.time in (RECENT_MS + 1)..EARLIER_MS }.map { it.rssi }
 
-        val trend = when {
-            recent.size < MIN_RECENT || earlier.size < MIN_EARLIER -> Trend.UNKNOWN
-            median(recent) - median(earlier) >= THRESHOLD_DB -> Trend.STRONGER
-            median(earlier) - median(recent) >= THRESHOLD_DB -> Trend.WEAKER
-            else -> Trend.STEADY
-        }
+        val trend =
+            when {
+                recent.size < MIN_RECENT || earlier.size < MIN_EARLIER -> Trend.UNKNOWN
+                median(recent) - median(earlier) >= THRESHOLD_DB -> Trend.STRONGER
+                median(earlier) - median(recent) >= THRESHOLD_DB -> Trend.WEAKER
+                else -> Trend.STEADY
+            }
         return SignalState(
             rssi = if (recent.isEmpty()) last.rssi else median(recent),
             trend = trend,

@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-enum class ThemeMode(val label: String, val nightMode: Int) {
+enum class ThemeMode(
+    val label: String,
+    val nightMode: Int,
+) {
     SYSTEM("System", UiModeManager.MODE_NIGHT_AUTO),
     LIGHT("Light", UiModeManager.MODE_NIGHT_NO),
     DARK("Dark", UiModeManager.MODE_NIGHT_YES),
@@ -29,7 +32,9 @@ data class AppSettings(
 )
 
 /** Small state that must outlive the process. All of it is read synchronously at service start. */
-class SettingsStore(context: Context) {
+class SettingsStore(
+    context: Context,
+) {
     private val prefs = context.getSharedPreferences("deja", Context.MODE_PRIVATE)
 
     private val settingsState = MutableStateFlow(readSettings())
@@ -38,27 +43,34 @@ class SettingsStore(context: Context) {
     private val journalState = MutableStateFlow(readJournal())
     val journal: StateFlow<ScanJournal> = journalState.asStateFlow()
 
-    private fun readSettings() = AppSettings(
-        scanningEnabled = prefs.getBoolean("scanning", true),
-        bluetoothEnabled = prefs.getBoolean("bluetooth", true),
-        wifiEnabled = prefs.getBoolean("wifi", true),
-        cadence = prefs.getString("cadence", null)
-            ?.let { name -> Cadence.entries.firstOrNull { it.name == name } } ?: Cadence.BALANCED,
-        alerts = AlertPrefs(
-            following = prefs.getBoolean("alertFollowing", true),
-            watched = prefs.getBoolean("alertWatched", true),
-            newTracker = prefs.getBoolean("alertNewTracker", false),
-        ),
-        retention = RetentionPolicy(
-            historyDays = prefs.getInt("historyDays", 30),
-            unnamedDays = prefs.getInt("unnamedDays", 30),
-            encounterDays = prefs.getInt("encounterDays", 7),
-            keepSavedHistory = prefs.getBoolean("keepSavedHistory", true),
-        ),
-        onboarded = prefs.getBoolean("onboarded", false),
-        theme = prefs.getString("theme", null)
-            ?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.SYSTEM,
-    )
+    private fun readSettings() =
+        AppSettings(
+            scanningEnabled = prefs.getBoolean("scanning", true),
+            bluetoothEnabled = prefs.getBoolean("bluetooth", true),
+            wifiEnabled = prefs.getBoolean("wifi", true),
+            cadence =
+                prefs
+                    .getString("cadence", null)
+                    ?.let { name -> Cadence.entries.firstOrNull { it.name == name } } ?: Cadence.BALANCED,
+            alerts =
+                AlertPrefs(
+                    following = prefs.getBoolean("alertFollowing", true),
+                    watched = prefs.getBoolean("alertWatched", true),
+                    newTracker = prefs.getBoolean("alertNewTracker", false),
+                ),
+            retention =
+                RetentionPolicy(
+                    historyDays = prefs.getInt("historyDays", 30),
+                    unnamedDays = prefs.getInt("unnamedDays", 30),
+                    encounterDays = prefs.getInt("encounterDays", 7),
+                    keepSavedHistory = prefs.getBoolean("keepSavedHistory", true),
+                ),
+            onboarded = prefs.getBoolean("onboarded", false),
+            theme =
+                prefs
+                    .getString("theme", null)
+                    ?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: ThemeMode.SYSTEM,
+        )
 
     fun update(change: (AppSettings) -> AppSettings) {
         settingsState.update(change)
@@ -80,18 +92,19 @@ class SettingsStore(context: Context) {
         }
     }
 
-    private fun readJournal() = ScanJournal(
-        lastBluetoothOk = prefs.getLong("lastBluetoothOk", 0),
-        lastWifiOk = prefs.getLong("lastWifiOk", 0),
-        lastFixAt = prefs.getLong("lastFixAt", 0),
-        lastFixAccuracy = prefs.getFloat("lastFixAccuracy", 0f),
-        lastBurstAt = prefs.getLong("lastBurstAt", 0),
-        bluetoothFailure = prefs.getString("bluetoothFailure", null),
-        wifiFailure = prefs.getString("wifiFailure", null),
-        failedBursts = prefs.getInt("failedBursts", 0),
-        failureAt = prefs.getLong("failureAt", 0),
-        serviceError = prefs.getString("serviceError", null),
-    )
+    private fun readJournal() =
+        ScanJournal(
+            lastBluetoothOk = prefs.getLong("lastBluetoothOk", 0),
+            lastWifiOk = prefs.getLong("lastWifiOk", 0),
+            lastFixAt = prefs.getLong("lastFixAt", 0),
+            lastFixAccuracy = prefs.getFloat("lastFixAccuracy", 0f),
+            lastBurstAt = prefs.getLong("lastBurstAt", 0),
+            bluetoothFailure = prefs.getString("bluetoothFailure", null),
+            wifiFailure = prefs.getString("wifiFailure", null),
+            failedBursts = prefs.getInt("failedBursts", 0),
+            failureAt = prefs.getLong("failureAt", 0),
+            serviceError = prefs.getString("serviceError", null),
+        )
 
     fun journal(change: (ScanJournal) -> ScanJournal) {
         journalState.update(change)
@@ -117,6 +130,8 @@ class SettingsStore(context: Context) {
 
     fun isDeniedForever(permission: String) = prefs.getBoolean("forever:$permission", false)
 
-    fun setDeniedForever(permission: String, forever: Boolean) =
-        prefs.edit { putBoolean("forever:$permission", forever) }
+    fun setDeniedForever(
+        permission: String,
+        forever: Boolean,
+    ) = prefs.edit { putBoolean("forever:$permission", forever) }
 }

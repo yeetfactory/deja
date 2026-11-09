@@ -19,8 +19,15 @@ class MergeTest {
         rssi: Int = -60,
         identity: IdentityConfidence = IdentityConfidence.STABLE,
     ) = Observation(
-        key = "ble:x", radio = Radio.BLE, name = name, category = category, rssi = rssi,
-        typeConfidence = confidence, descriptor = descriptor, identity = identity, evidence = "evidence for $category",
+        key = "ble:x",
+        radio = Radio.BLE,
+        name = name,
+        category = category,
+        rssi = rssi,
+        typeConfidence = confidence,
+        descriptor = descriptor,
+        identity = identity,
+        evidence = "evidence for $category",
     )
 
     private val findMy = obs(Category.FIND_MY, TypeConfidence.LOW, "Apple Find My broadcast · Model unknown")
@@ -96,10 +103,11 @@ class MergeTest {
     }
 
     @Test fun `packets in one burst combine, keeping the best classification`() {
-        val merged = Merge.packets(
-            airpods.copy(rssi = -50, minRssi = -50, maxRssi = -50),
-            findMy.copy(rssi = -70, minRssi = -70, maxRssi = -70),
-        )
+        val merged =
+            Merge.packets(
+                airpods.copy(rssi = -50, minRssi = -50, maxRssi = -50),
+                findMy.copy(rssi = -70, minRssi = -70, maxRssi = -70),
+            )
         assertEquals(Category.AUDIO, merged.category)
         assertEquals(-70, merged.rssi)
         assertEquals(-70, merged.minRssi)

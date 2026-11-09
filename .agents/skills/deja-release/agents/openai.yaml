@@ -1,0 +1,3 @@
+# Codex: run this skill only when someone asks for it with $deja-release.
+policy:
+  allow_implicit_invocation: false

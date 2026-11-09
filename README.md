@@ -9,7 +9,7 @@ Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around y
 ## What it does
 
 - **Remembers devices.** Sees what's nearby, and where and when it was heard.
-- **Warns about following.** Alerts only after repeated readings at places that are clearly apart, in sequence, over at least 30 minutes. Each alert shows the evidence as a timeline.
+- **Warns about following.** Alerts only after repeated readings at places that are clearly apart, in sequence, over at least 30 minutes. Each alert shows the evidence as a timeline, and you can export it as a CSV file.
 - **Sums up what's around you.** One line says whether anything is unusual, with counts for devices that have been with you today, are new here, or are regulars.
 - **Watches a device live.** Open a device's page to see its signal strength and whether it's getting stronger or weaker.
 - **Says what it doesn't know.** A Find My broadcast shows as `Apple Find My broadcast · Model unknown` unless the device gives away more.
@@ -55,6 +55,8 @@ Déjà is an experimental project, provided as is, with no warranty, and you use
 You need JDK 21 and the Android SDK with API level 37.
 
 ```sh
+./gradlew check                    # formatting, lint and tests
+./gradlew spotlessApply            # fix formatting
 ./gradlew :app:testDebugUnitTest   # run the tests
 ./gradlew :app:assembleDebug       # build a debug APK
 ```
@@ -69,6 +71,8 @@ keyPassword=...
 ```
 
 Then run `./gradlew :app:assembleRelease`.
+
+Before changing the code, read [AGENTS.md](AGENTS.md). It explains how the code is laid out, and the rules it must keep, such as never gaining the internet permission. It's written for AI coding agents, but it works for people too.
 
 ## Credits
 

@@ -7,6 +7,7 @@ Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around y
 - JDK 21 and the Android SDK with API level 37.
 - One module, `:app`: Kotlin 2.4, the Android Gradle plugin 9 with its built-in Kotlin, Jetpack Compose, and Room through KSP.
 - Versions live in `gradle/libs.versions.toml`. Add dependencies there, not in the build files.
+- Git hooks run through [Lefthook](https://lefthook.dev). Set them up once per clone with `brew install lefthook && lefthook install`.
 
 ## Commands
 
@@ -19,6 +20,16 @@ Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around y
 | `./gradlew :app:assembleDebug` | Builds a debug APK. |
 
 Tests run on the JVM, with Robolectric for Android code. They don't need a phone or an emulator.
+
+## Git hooks
+
+The hooks are in `lefthook.yml`.
+
+- **Before a commit:** no trailing spaces or conflict markers, no signing files, and `spotlessCheck` when Kotlin files are staged. The hook never fixes formatting itself. Run `./gradlew spotlessApply`, review what it changed, and stage it.
+- **On the commit message:** the first line must be a Conventional Commit.
+- **Before a push:** `./gradlew check`, then a check that the build left no uncommitted change in `app/schemas/`.
+
+Don't skip a hook with `--no-verify`. Fix what it found.
 
 ## Layout
 

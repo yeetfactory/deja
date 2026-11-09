@@ -1,0 +1,65 @@
+# Git hooks for Déjà, run by Lefthook: https://lefthook.dev
+# Set them up once per clone: brew install lefthook && lefthook install
+# AGENTS.md says what each hook checks.
+
+# Match globs the way the shell does, so **/*.kts also matches build files at the top level.
+glob_matcher: doublestar
+
+pre-commit:
+  jobs:
+    - name: whitespace
+      # Trailing spaces and leftover conflict markers. Markdown is left out, because .editorconfig lets a line end in spaces there.
+      run: git diff --cached --check -- . ':(exclude)*.md'
+
+    - name: signing files
+      # .gitignore keeps these out, but `git add -f` gets past it. Deleting one is allowed, so a mistake can be undone.
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=d | grep -E '(^|/)(keystore|local)\.properties$|\.(jks|keystore)$')
+        if [ -n "$files" ]; then
+          echo "These files hold signing secrets or this machine's paths, and must never be committed:"
+          echo "$files"
+          echo "Unstage them with: git restore --staged <file>"
+          exit 1
+        fi
+
+    - name: format
+      # Checks and never fixes. A fix would stage changes nobody has reviewed.
+      glob: "**/*.{kt,kts}"
+      run: ./gradlew spotlessCheck --quiet
+      fail_text: Run ./gradlew spotlessApply, review what it changed, and stage it.
+
+commit-msg:
+  jobs:
+    - name: conventional commits
+      # Git hands the hook the message before it strips comments, so skip those and blank lines to find the subject.
+      run: |
+        subject=$(grep -v '^#' {1} | grep -m 1 -v '^[[:space:]]*$')
+        types='feat|fix|docs|refactor|test|chore|build|ci|perf|style|revert'
+        if echo "$subject" | grep -qE "^($types)(\([a-z0-9._/-]+\))?!?: [^[:space:]]"; then exit 0; fi
+        # Messages that Git writes itself.
+        if echo "$subject" | grep -qE '^(Merge |Revert "|(fixup|squash|amend)! )'; then exit 0; fi
+        echo "The first line must be a Conventional Commit, such as:"
+        echo "  feat: add a Places screen"
+        echo "  fix(scan): keep scanning after a restart"
+        echo "Types: feat, fix, docs, refactor, test, chore, build, ci, perf, style and revert."
+        echo "Put ! before the colon for a breaking change."
+        echo "Got: $subject"
+        exit 1
+
+pre-push:
+  piped: true
+  jobs:
+    - name: check
+      run: ./gradlew check --quiet
+
+    - name: room schemas
+      # The build writes the Room schema to app/schemas/. If that leaves a new or changed file, a schema change isn't committed.
+      run: |
+        changed=$(git status --porcelain --untracked-files=all -- app/schemas)
+        if [ -n "$changed" ]; then
+          echo "Building changed the Room schema, and the change isn't committed:"
+          echo "$changed"
+          echo "If an entity changed, bump the database version, add a migration and commit the new schema JSON."
+          echo "See 'Database changes' in AGENTS.md."
+          exit 1
+        fi

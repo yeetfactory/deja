@@ -7,9 +7,14 @@ plugins {
 }
 
 /** Signing secrets live outside version control. Without them a release build is left unsigned. */
-val keystore = Properties().apply {
-    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
-}
+val keystore =
+    Properties().apply {
+        rootProject
+            .file("keystore.properties")
+            .takeIf { it.exists() }
+            ?.inputStream()
+            ?.use { load(it) }
+    }
 
 android {
     namespace = "dev.rishikesh.deja"
@@ -55,6 +60,19 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+        // Whether a newer library exists depends on the date, not on this code, so report it without failing.
+        informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
     }
 }
 

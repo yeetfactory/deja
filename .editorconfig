@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.bat]
+end_of_line = crlf
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{kt,kts}]
+# ktlint's own default style: Kotlin coding conventions plus the Android Kotlin style guide.
+ktlint_code_style = ktlint_official
+max_line_length = 140
+# Compose requires composables to be named like types. ktlint documents this setting for Compose code.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# The theme's colours, read the way MaterialTheme reads its own. Any other CompositionLocal still fails.
+compose_allowed_composition_locals = LocalPalette
+
+# Make Android Studio format the way ktlint checks.
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+ij_kotlin_name_count_to_use_star_import = 2147483647
+ij_kotlin_name_count_to_use_star_import_for_members = 2147483647

@@ -4,7 +4,7 @@ Know when something comes back.
 
 Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around you. It tells you when one turns up again, or seems to be following you from place to place.
 
-**[Download the latest APK](https://github.com/yeetfactory/deja/releases/latest/download/Deja-0.0.2.apk)** · Android 15 or newer
+**[Download the latest APK](https://github.com/yeetfactory/deja/releases/latest/download/Deja-0.0.3.apk)** · Android 15 or newer
 
 ## What it does
 

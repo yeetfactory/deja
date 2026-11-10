@@ -143,7 +143,11 @@ fun LiveSignalCard(
 
     Group(modifier.padding(bottom = 12.dp)) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-            Text("Live signal", style = Type.label, color = palette.muted)
+            Text(
+                if (device.radio == Radio.WIFI) "Signal strength" else "Live signal",
+                style = Type.label,
+                color = palette.muted,
+            )
             Spacer(Modifier.height(HeadingGap))
             when {
                 device.radio == Radio.WIFI -> {

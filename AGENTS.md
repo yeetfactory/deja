@@ -64,6 +64,7 @@ Room exports each schema version to `app/schemas/`. When an entity changes:
 - Logic in `core/` gets a JVM test. Database code gets a Robolectric test, using `DatabaseTestSupport.kt`.
 - Test names are sentences in backticks, such as `` `a pause survives a restart` ``.
 - An emulator has no real radios, so debug builds there use `SimulatedSource`: a fake town that replays two days of walking between three places. Use it to see returns and following end to end. Code for the real radios needs a real phone.
+- The README screenshots in `docs/screenshots/` come from `SimulatedSource`, never from real scans, because real scans show other people's devices, networks and places. Retake them when a screen they show changes.
 
 ## Code style
 

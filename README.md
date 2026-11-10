@@ -6,6 +6,8 @@ Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around y
 
 **[Download the latest APK](https://github.com/yeetfactory/deja/releases/latest/download/Deja-0.0.3.apk)** · Android 15 or newer
 
+![Déjà's Nearby summary, a following alert with its evidence, and the Activity timeline](docs/screenshots/hero.png)
+
 ## What it does
 
 - **Remembers devices.** Sees what's nearby, and where and when it was heard.
@@ -15,6 +17,31 @@ Déjà is an Android app that remembers the Bluetooth and Wi-Fi devices around y
 - **Says what it doesn't know.** A Find My broadcast shows as `Apple Find My broadcast · Model unknown` unless the device gives away more.
 - **Respects private addresses.** Phones rotate their Bluetooth address on purpose. Each address is kept as its own short-lived encounter, and Déjà never guesses that two addresses are the same device.
 - **Shows its own health.** Bluetooth, Wi-Fi, location and alerts each report their state, with a fix when something stops working.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/nearby.png" alt="Nearby: a one-line summary, signal strengths and the devices in range"></td>
+    <td width="33%"><img src="docs/screenshots/alert.png" alt="A following alert, with the places and times as evidence"></td>
+    <td width="33%"><img src="docs/screenshots/activity.png" alt="Activity: returns, new trackers and following alerts by day"></td>
+  </tr>
+  <tr>
+    <td align="center">Nearby</td>
+    <td align="center">Following alert</td>
+    <td align="center">Activity</td>
+  </tr>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/device.png" alt="A device's page: sightings, places, and what Déjà thinks it is"></td>
+    <td width="33%"><img src="docs/screenshots/places.png" alt="Places where Déjà has heard devices"></td>
+    <td width="33%"><img src="docs/screenshots/health.png" alt="Scanner health for Bluetooth, Wi-Fi, location and alerts"></td>
+  </tr>
+  <tr>
+    <td align="center">Device</td>
+    <td align="center">Places</td>
+    <td align="center">Scanner health</td>
+  </tr>
+</table>
 
 ## Privacy
 
